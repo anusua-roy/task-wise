@@ -1,0 +1,91 @@
+Task Tracker Monorepo .gitignore
+
+----------------------------------------------------------------------
+
+1. PYTHON / BACKEND (FastAPI / SQLAlchemy)
+
+----------------------------------------------------------------------
+
+Virtual Environment
+
+/backend/venv
+/.venv
+
+Byte-code and temporary files
+
+pycache/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*~
+
+Python-specific build/distribution files
+
+.tox/
+.coverage
+.pytest_cache/
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+Database files
+
+Local SQLite database file (if used for development)
+
+*.db
+*.sqlite3
+
+Alembic migration environment
+
+Keep the 'versions' folder, ignore environment specific files
+
+/backend/alembic.ini
+/backend/pycache/
+
+----------------------------------------------------------------------
+
+2. NODE.JS / FRONTEND (React / Vite / TypeScript)
+
+------------------------------------------------------
+
+Dependency directory
+
+/frontend/node_modules
+
+Build output
+
+/frontend/dist/
+/frontend/build/
+/frontend/out/
+
+Vite / IDE / Temporary files
+
+.vite/
+.vscode/
+
+Logs
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+----------------------------------------------------------------------
+
+3. ENVIRONMENT & SECRETS
+
+----------------------------------------------------------------------
+
+Environment variables (Crucial for security in production)
+
+.env
+.env.*
+!.env.example # Keep the example file if you create one
+
+Generic IDE and OS files
+
+.idea/
+.DS_Store
+Thumbs.db
