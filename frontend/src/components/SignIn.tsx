@@ -1,42 +1,46 @@
 import React, { useState } from "react";
 
-export default function SignIn({ onSign }: { onSign: (user:{name:string,email?:string})=>void }){
+export default function SignIn({ onSign }: { onSign: (u:{name:string,email?:string})=>void }) {
   const [email, setEmail] = useState("");
+
   return (
-    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
-      <div style={{width:520,maxWidth:'100%',borderRadius:12,background:'var(--card)',padding:24,boxShadow:'0 6px 20px rgba(15,23,42,0.04)'}}>
-        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:12}}>
-          <div style={{width:38,height:38,borderRadius:8,background:'#fff4ed',display:'flex',alignItems:'center',justifyContent:'center'}}>✓</div>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-bg text-fg">
+      <div className="w-full max-w-md bg-card p-6 rounded-xl shadow">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 font-bold">
+            ✓
+          </div>
           <div>
-            <div style={{fontWeight:700}}>Welcome to TaskWise</div>
-            <div style={{color:'var(--muted)',fontSize:13}}>Sign in to access your dashboard.</div>
+            <h1 className="text-lg font-semibold">Welcome to TaskWise</h1>
+            <p className="text-sm text-muted">Sign in to access your dashboard.</p>
           </div>
         </div>
 
-        <div style={{marginTop:14,display:'grid',gap:10}}>
-          <button
-            onClick={() => { /* placeholder: replace with real SSO */ onSign({name:'SSO User', email: ''}) }}
-            style={{padding:12,borderRadius:8,background:'var(--accent)',color:'#fff',border:'none',fontWeight:600}}
-          >
-            Sign in with SSO
-          </button>
+        <button
+          className="w-full py-2.5 bg-orange-600 text-white rounded-lg font-medium"
+          onClick={() => onSign({ name: "SSO User" })}
+        >
+          Sign in with SSO
+        </button>
 
-          <div style={{textAlign:'center',color:'var(--muted)',fontSize:13}}>or sign in with email</div>
-
-          <input
-            value={email}
-            onChange={e=>setEmail(e.target.value)}
-            placeholder="you@example.com"
-            style={{padding:10,borderRadius:8,border:'1px solid var(--border)'}}
-          />
-
-          <button onClick={() => onSign({name: email || 'Guest', email})}
-                  style={{padding:10,borderRadius:8,border:'1px solid var(--border)',background:'white'}}>
-            Sign in
-          </button>
-
-          <div style={{fontSize:12,color:'var(--muted)',textAlign:'center'}}>SSO will be wired later — call your auth endpoint and then call <code>onSign</code>.</div>
+        <div className="my-4 text-center text-muted text-sm">
+          or continue with email
         </div>
+
+        <input
+          type="email"
+          value={email}
+          onChange={(e)=>setEmail(e.target.value)}
+          placeholder="you@example.com"
+          className="w-full p-2.5 rounded-lg border border-border bg-bg text-fg mb-3"
+        />
+
+        <button
+          className="w-full py-2.5 rounded-lg border border-border bg-white"
+          onClick={() => onSign({ name: email || "Guest", email })}
+        >
+          Sign in
+        </button>
       </div>
     </div>
   );
