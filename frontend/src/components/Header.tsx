@@ -1,3 +1,5 @@
+import React from "react";
+
 export default function Header() {
   const user = JSON.parse(localStorage.getItem("tw_user") || "{}");
 

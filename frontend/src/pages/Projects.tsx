@@ -1,22 +1,28 @@
 import React, { useMemo, useState } from "react";
+import {useNavigate} from "react-router-dom"
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import ProjectCard from "../components/ProjectCard";
-import { projects as mockProjects } from "../lib/projects";
+import { PROJECTS } from "../data/projects";
+import { PROJECT_TYPE } from "../types/project";
 
 export default function Projects() {
   const [q, setQ] = useState("");
-  const [items] = useState(mockProjects);
+  const navigate = useNavigate()
+  const [items] = useState<PROJECT_TYPE[]>(PROJECTS);
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (!t) return items;
-    return items.filter(p => p.title.toLowerCase().includes(t) || (p.description || "").toLowerCase().includes(t));
+    return items.filter(
+      (p) =>
+        p.title.toLowerCase().includes(t) ||
+        (p.description || "").toLowerCase().includes(t)
+    );
   }, [q, items]);
 
   function openProject(id: string) {
-    // placeholder: replace with router navigation e.g. navigate(`/projects/${id}`)
-    alert("Open project: " + id);
+    navigate(`/projects/${id}`)
   }
 
   return (
@@ -34,12 +40,14 @@ export default function Projects() {
           />
 
           <div className="flex items-center gap-2">
-            <button className="px-3 py-2 rounded-lg bg-orange-600 text-white text-sm">New Project</button>
+            <button className="px-3 py-2 rounded-lg bg-orange-600 text-white text-sm">
+              New Project
+            </button>
           </div>
         </div>
 
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(p => (
+          {filtered.map((p) => (
             <ProjectCard key={p.id} project={p} onOpen={openProject} />
           ))}
         </section>
