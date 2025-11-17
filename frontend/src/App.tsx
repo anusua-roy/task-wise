@@ -1,25 +1,22 @@
 import React, { useEffect, useState } from "react";
 import Dashboard from "./pages/Dashboard";
-import "./styles/theme.css";
-import SignIn from "./components/SignIn";
+import SignIn from "./pages/SignIn";
+import "./globals.css";
 
 export default function App() {
-  const [user, setUser] = useState<{ name: string; email?: string } | null>(
-    null
-  );
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("tw_user")
-      if(raw)setUser(JSON.parse(raw))
-    } catch {}
+    const raw = localStorage.getItem("tw_user");
+    if (raw) setUser(JSON.parse(raw));
   }, []);
 
-  function handleSign(u: { name: string; email?: string }){
-    setUser(u)
-    localStorage.setItem("tw_user", JSON.stringify(u))
-  };
+  function handleSign(u: any) {
+    setUser(u);
+    localStorage.setItem("tw_user", JSON.stringify(u));
+  }
 
-  if(!user) return <SignIn onSign={handleSign}/>
+  if (!user) return <SignIn onSign={handleSign} />;
+
   return <Dashboard />;
 }
