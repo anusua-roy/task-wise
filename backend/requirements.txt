@@ -4,3 +4,5 @@ pydantic
 sqlalchemy
 alembic
 psycopg2-binary
+email-validator
+python-jose[cryptography]

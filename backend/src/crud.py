@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from .models import Base, Role, User, Project, Task, ProjectMember
 from .schemas import RoleCreate, RoleUpdate, UserCreate, UserUpdate
+import uuid
 
 # Define type variables for generic CRUD operations
 ModelType = TypeVar("ModelType", bound=Base)

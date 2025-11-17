@@ -4,8 +4,9 @@ from typing import List, Union
 import uuid
 
 from .... import crud, schemas
+from ....schemas import Project, ProjectCreate, ProjectUpdate, TokenPayload
 from ....database import get_db
-from ....auth import get_admin, get_task_creator_or_admin, RoleChecker, TokenData, ALL_ROLES
+from .auth import get_admin, get_task_creator_or_admin, RoleChecker, ALL_ROLES
 
 router = APIRouter()
 
@@ -13,7 +14,7 @@ router = APIRouter()
 # Helper Dependencies for Project Authorization
 # ----------------------------------------------------------------------
 
-def get_project_owner_or_admin(project_id: Union[uuid.UUID, str], db: Session = Depends(get_db), current_user: TokenData = Depends(get_task_creator_or_admin)):
+def get_project_owner_or_admin(project_id: Union[uuid.UUID, str], db: Session = Depends(get_db), current_user: TokenPayload = Depends(get_task_creator_or_admin)):
     """
     Dependency to ensure the current user is an Admin OR the Project Owner.
     Returns the Project object if authorized.
@@ -32,7 +33,7 @@ def get_project_owner_or_admin(project_id: Union[uuid.UUID, str], db: Session = 
     
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied. Must be Admin or Project Owner.")
 
-def get_member_or_admin(project_id: Union[uuid.UUID, str], db: Session = Depends(get_db), current_user: TokenData = Depends(RoleChecker(ALL_ROLES))):
+def get_member_or_admin(project_id: Union[uuid.UUID, str], db: Session = Depends(get_db), current_user: TokenPayload = Depends(RoleChecker(ALL_ROLES))):
     """
     Dependency to ensure the current user is a Project Member (including Read-Only) or Admin.
     """
@@ -63,7 +64,7 @@ def create_project(
     *,
     db: Session = Depends(get_db),
     project_in: schemas.ProjectCreate,
-    current_user: TokenData = Depends(RoleChecker(ALL_ROLES))
+    current_user: TokenPayload = Depends(RoleChecker(ALL_ROLES))
 ):
     """Create a new project. Automatically sets the current user as owner and member."""
     owner_id = uuid.UUID(current_user.user_id)
@@ -72,7 +73,7 @@ def create_project(
 @router.get("/", response_model=List[schemas.Project], tags=["Projects"])
 def read_projects(
     db: Session = Depends(get_db),
-    current_user: TokenData = Depends(RoleChecker(ALL_ROLES)), # Access: All authenticated users
+    current_user: TokenPayload = Depends(RoleChecker(ALL_ROLES)), # Access: All authenticated users
     skip: int = 0,
     limit: int = 100
 ):
