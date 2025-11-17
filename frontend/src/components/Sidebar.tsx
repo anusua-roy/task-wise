@@ -2,6 +2,14 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ROUTE_NAMES } from "../routes/constants";
 
+const SIDEBAR_OPTIONS = {
+  DASHBOARD: "Dashboard",
+  PROJECTS: "Projects",
+  TASKS: "My Tasks",
+  USERS: "User Management",
+  SETTINGS: "Settings",
+};
+
 export default function Sidebar() {
   const { pathname } = useLocation();
   const linkClass = (path: string) =>
@@ -18,30 +26,11 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex flex-col gap-2">
-        <Link
-          to={ROUTE_NAMES.DASHBOARD}
-          className={linkClass(ROUTE_NAMES.DASHBOARD)}
-        >
-          Dashboard
-        </Link>
-        <Link
-          to={ROUTE_NAMES.PROJECTS}
-          className={linkClass(ROUTE_NAMES.PROJECTS)}
-        >
-          Projects
-        </Link>
-        <Link to={ROUTE_NAMES.TASKS} className={linkClass(ROUTE_NAMES.TASKS)}>
-          My Tasks
-        </Link>
-        <Link to={ROUTE_NAMES.USERS} className={linkClass(ROUTE_NAMES.USERS)}>
-          User Management
-        </Link>
-        <Link
-          to={ROUTE_NAMES.SETTINGS}
-          className={linkClass(ROUTE_NAMES.SETTINGS)}
-        >
-          Settings
-        </Link>
+        {Object.entries(SIDEBAR_OPTIONS).map(([key, value], index) => (
+          <Link to={ROUTE_NAMES[key]} className={linkClass(ROUTE_NAMES[key])}>
+            {value}
+          </Link>
+        ))}
       </nav>
     </aside>
   );

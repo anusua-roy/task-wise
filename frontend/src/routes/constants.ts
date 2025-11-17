@@ -1,4 +1,4 @@
-export const ROUTE_NAMES = {
+export const ROUTE_NAMES: any = {
   SIGNIN: "/signin",
   DASHBOARD: "/dashboard",
   PROJECTS: "/projects",
