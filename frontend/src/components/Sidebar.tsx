@@ -1,21 +1,18 @@
-import React from "react";
-
-export default function Sidebar(){
+export default function Sidebar() {
   return (
-    <aside className="sidebar" aria-label="Main sidebar">
-      <div className="logo">
-        <div style={{width:28,height:28,borderRadius:6,background:'#fff4ed',display:'flex',alignItems:'center',justifyContent:'center',color:'#f97316'}}>✓</div>
-        <div>TaskWise</div>
+    <aside className="hidden md:flex flex-col w-56 p-4 border-r border-border bg-bg">
+      <div className="flex items-center gap-2 mb-6">
+        <div className="w-7 h-7 rounded-md bg-orange-100 flex items-center justify-center text-orange-600">✓</div>
+        <span className="font-semibold">TaskWise</span>
       </div>
 
-      <nav style={{marginTop:20,display:'flex',flexDirection:'column',gap:12}}>
-        <a href="/dashboard" style={{color:'inherit',textDecoration:'none'}}>Dashboard</a>
-        <a href="/projects" style={{color:'inherit',textDecoration:'none'}}>Projects</a>
-        <a href="/tasks" style={{color:'inherit',textDecoration:'none'}}>My Tasks</a>
-        <a href="/users" style={{color:'inherit',textDecoration:'none'}}>User Management</a>
-        <a href="/settings" style={{color:'inherit',textDecoration:'none'}}>Settings</a>
+      <nav className="flex flex-col gap-3 text-sm">
+        <a href="/dashboard" className="hover:text-orange-600">Dashboard</a>
+        <a href="/projects" className="hover:text-orange-600">Projects</a>
+        <a href="/tasks" className="hover:text-orange-600">My Tasks</a>
+        <a href="/users" className="hover:text-orange-600">User Management</a>
+        <a href="/settings" className="hover:text-orange-600">Settings</a>
       </nav>
     </aside>
   );
 }
-
