@@ -5,6 +5,7 @@ import Header from "../components/Header";
 import { PROJECTS } from "../data/projects";
 import Breadcrumbs from "../components/Breadcrumbs";
 import { PROJECT_TYPE } from "../types/project";
+import { ROUTE_NAMES } from "../routes/constants";
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -23,7 +24,7 @@ export default function ProjectDetail() {
 
         <Breadcrumbs
           items={[
-            { label: "Projects", href: "/projects" },
+            { label: "Projects", href: ROUTE_NAMES.PROJECTS },
             { label: project.title },
           ]}
         />
@@ -45,12 +46,6 @@ export default function ProjectDetail() {
             </div>
 
             <div className="flex gap-2">
-              <button
-                className="px-3 py-2 rounded-lg border border-border"
-                onClick={() => navigate(-1)}
-              >
-                Back
-              </button>
               <button
                 className="px-3 py-2 rounded-lg bg-orange-600 text-white"
                 onClick={() => alert("Add Task")}
