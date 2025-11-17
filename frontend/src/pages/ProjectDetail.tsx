@@ -3,14 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { PROJECTS } from "../data/projects";
+import Breadcrumbs from "../components/Breadcrumbs";
 import { PROJECT_TYPE } from "../types/project";
-import { ROUTE_NAMES } from "../routes/constants";
 
-export default function ProjectDetail({
-  onSignOut,
-}: {
-  onSignOut?: () => void;
-}) {
+export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const project: PROJECT_TYPE = PROJECTS.find((p) => p.id === id) || {
@@ -25,11 +21,19 @@ export default function ProjectDetail({
       <main className="flex-1 p-4 md:p-6">
         <Header />
 
+        <Breadcrumbs
+          items={[
+            { label: "Projects", href: "/projects" },
+            { label: project.title },
+          ]}
+        />
+
         <div className="mb-6">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-2xl font-semibold">{project.title}</h2>
               <p className="text-muted mt-2">{project.description}</p>
+
               <div className="flex items-center gap-2 mt-4">
                 <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">
                   JS
@@ -53,17 +57,6 @@ export default function ProjectDetail({
               >
                 Add Task
               </button>
-              {onSignOut && (
-                <button
-                  className="px-3 py-2 rounded-lg border border-border"
-                  onClick={() => {
-                    onSignOut();
-                    navigate(ROUTE_NAMES.SIGNIN);
-                  }}
-                >
-                  Sign out
-                </button>
-              )}
             </div>
           </div>
         </div>
