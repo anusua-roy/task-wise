@@ -2,22 +2,13 @@ import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
-import { PROJECTS } from "../data/projects";
-import { PROJECT_TYPE } from "../types/project";
-import { ROUTE_NAMES } from "../routes/constants";
+import { projects } from "../lib/projects";
+import Breadcrumbs from "../components/Breadcrumbs";
 
-export default function ProjectDetail({
-  onSignOut,
-}: {
-  onSignOut?: () => void;
-}) {
+export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const project: PROJECT_TYPE = PROJECTS.find((p) => p.id === id) || {
-    id: "proj-0",
-    title: "Project not found",
-    description: "",
-  };
+  const project = projects.find((p) => p.id === id) || { title: "Project not found", description: "" };
 
   return (
     <div className="min-h-screen flex bg-bg text-fg">
@@ -25,45 +16,27 @@ export default function ProjectDetail({
       <main className="flex-1 p-4 md:p-6">
         <Header />
 
+        <Breadcrumbs items={[{ label: "Projects", href: "/projects" }, { label: project.title }]} />
+
         <div className="mb-6">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-2xl font-semibold">{project.title}</h2>
               <p className="text-muted mt-2">{project.description}</p>
+
               <div className="flex items-center gap-2 mt-4">
-                <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">
-                  JS
-                </div>
-                <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">
-                  PW
-                </div>
+                <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">JS</div>
+                <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">PW</div>
               </div>
             </div>
 
             <div className="flex gap-2">
-              <button
-                className="px-3 py-2 rounded-lg border border-border"
-                onClick={() => navigate(-1)}
-              >
+              <button className="px-3 py-2 rounded-lg border border-border" onClick={() => navigate(-1)}>
                 Back
               </button>
-              <button
-                className="px-3 py-2 rounded-lg bg-orange-600 text-white"
-                onClick={() => alert("Add Task")}
-              >
+              <button className="px-3 py-2 rounded-lg bg-orange-600 text-white" onClick={() => alert("Add Task")}>
                 Add Task
               </button>
-              {onSignOut && (
-                <button
-                  className="px-3 py-2 rounded-lg border border-border"
-                  onClick={() => {
-                    onSignOut();
-                    navigate(ROUTE_NAMES.SIGNIN);
-                  }}
-                >
-                  Sign out
-                </button>
-              )}
             </div>
           </div>
         </div>
