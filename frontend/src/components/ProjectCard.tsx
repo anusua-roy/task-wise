@@ -1,10 +1,11 @@
 import React from "react";
+import { PROJECT_TYPE } from "../types/project";
 
 export default function ProjectCard({
   project,
   onOpen,
 }: {
-  project: { id: string; title: string; description?: string; progress?: number };
+  project: PROJECT_TYPE;
   onOpen?: (id: string) => void;
 }) {
   return (
@@ -13,13 +14,17 @@ export default function ProjectCard({
       role="button"
       tabIndex={0}
       onClick={() => onOpen?.(project.id)}
-      onKeyDown={(e) => { if (e.key === "Enter") onOpen?.(project.id); }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onOpen?.(project.id);
+      }}
       aria-label={project.title}
     >
       <div className="flex justify-between items-start">
         <div className="pr-2">
           <h3 className="text-sm font-semibold">{project.title}</h3>
-          <p className="mt-2 text-muted text-xs line-clamp-3">{project.description}</p>
+          <p className="mt-2 text-muted text-xs line-clamp-3">
+            {project.description}
+          </p>
         </div>
         <div className="text-sm text-muted">{project.progress ?? 0}%</div>
       </div>

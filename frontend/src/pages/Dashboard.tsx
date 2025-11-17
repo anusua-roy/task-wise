@@ -14,9 +14,7 @@ export default function Dashboard(){
           {PROJECTS.map((proj) => (
             <ProjectCard
               key={proj.id}
-              title={proj.title}
-              subtitle={proj.subtitle}
-              progress={proj.progress}
+              project={proj}
             />
           ))}
         </div>

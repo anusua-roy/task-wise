@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+import { USER_TYPE } from "../types/user";
 
-export default function SignIn({ onSign }: { onSign: (u:{name:string,email?:string})=>void }) {
+export default function SignIn({ onSign }: { onSign: (u: USER_TYPE) => void }) {
   const [email, setEmail] = useState("");
 
   return (
@@ -12,7 +13,9 @@ export default function SignIn({ onSign }: { onSign: (u:{name:string,email?:stri
           </div>
           <div>
             <h1 className="text-lg font-semibold">Welcome to TaskWise</h1>
-            <p className="text-sm text-muted">Sign in to access your dashboard.</p>
+            <p className="text-sm text-muted">
+              Sign in to access your dashboard.
+            </p>
           </div>
         </div>
 
@@ -30,7 +33,7 @@ export default function SignIn({ onSign }: { onSign: (u:{name:string,email?:stri
         <input
           type="email"
           value={email}
-          onChange={(e)=>setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
           className="w-full p-2.5 rounded-lg border border-border bg-bg text-fg mb-3"
         />
