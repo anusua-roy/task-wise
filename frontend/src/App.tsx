@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Dashboard from "./pages/Dashboard";
-import SignIn from "./pages/SignIn";
-import "./globals.css";
+import SignIn from "./components/SignIn";
+import "./styles/theme.css";
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
