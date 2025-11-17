@@ -4,6 +4,7 @@ import Dashboard from "../pages/Dashboard";
 import Projects from "../pages/Projects";
 import ProjectDetail from "../pages/ProjectDetail";
 import SignIn from "../pages/SignIn";
+import { ROUTE_NAMES } from "./constants";
 
 function ProtectedRoute({ children, user }: { children: JSX.Element; user: any }) {
   if (!user) return <Navigate to="/signin" replace />;
@@ -22,19 +23,23 @@ export default function AppRoutes({
   return (
     <Routes>
       {/* Public route */}
-      <Route path="/signin" element={<SignIn onSign={onSign} />} />
+      <Route path={ROUTE_NAMES.SIGNIN} element={<SignIn onSign={onSign} />} />
 
       {/* Redirect root */}
       <Route
         path="/"
         element={
-          user ? <Navigate to="/dashboard" replace /> : <Navigate to="/signin" replace />
+          user ? (
+            <Navigate to={ROUTE_NAMES.DASHBOARD} replace />
+          ) : (
+            <Navigate to={ROUTE_NAMES.SIGNIN} replace />
+          )
         }
       />
 
       {/* Protected routes */}
       <Route
-        path="/dashboard"
+        path={ROUTE_NAMES.DASHBOARD}
         element={
           <ProtectedRoute user={user}>
             <Dashboard />
@@ -43,7 +48,7 @@ export default function AppRoutes({
       />
 
       <Route
-        path="/projects"
+        path={ROUTE_NAMES.PROJECTS}
         element={
           <ProtectedRoute user={user}>
             <Projects />
@@ -52,7 +57,7 @@ export default function AppRoutes({
       />
 
       <Route
-        path="/projects/:id"
+        path={ROUTE_NAMES.PROJECT(":id")}
         element={
           <ProtectedRoute user={user}>
             <ProjectDetail onSignOut={onSignOut} />
@@ -63,9 +68,7 @@ export default function AppRoutes({
       {/* Fallback */}
       <Route
         path="*"
-        element={
-          <Navigate to={user ? "/dashboard" : "/signin"} replace />
-        }
+        element={<Navigate to={user ? ROUTE_NAMES.DASHBOARD : ROUTE_NAMES.SIGNIN} replace />}
       />
     </Routes>
   );

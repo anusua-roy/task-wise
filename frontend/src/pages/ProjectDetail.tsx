@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { PROJECTS } from "../data/projects";
 import { PROJECT_TYPE } from "../types/project";
+import { ROUTE_NAMES } from "../routes/constants";
 
 export default function ProjectDetail({
   onSignOut,
@@ -57,7 +58,7 @@ export default function ProjectDetail({
                   className="px-3 py-2 rounded-lg border border-border"
                   onClick={() => {
                     onSignOut();
-                    navigate("/signin");
+                    navigate(ROUTE_NAMES.SIGNIN);
                   }}
                 >
                   Sign out

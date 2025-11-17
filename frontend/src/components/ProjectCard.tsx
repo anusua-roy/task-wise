@@ -1,21 +1,26 @@
 import React from "react";
 import { PROJECT_TYPE } from "../types/project";
+import { useNavigate } from "react-router-dom";
+import { ROUTE_NAMES } from "../routes/constants";
 
 export default function ProjectCard({
   project,
-  onOpen,
 }: {
   project: PROJECT_TYPE;
-  onOpen?: (id: string) => void;
+  
 }) {
+  const navigate = useNavigate()
+  function openProject(id: string) {
+    navigate(ROUTE_NAMES.PROJECT(id));
+  }
   return (
     <article
       className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition cursor-pointer"
       role="button"
       tabIndex={0}
-      onClick={() => onOpen?.(project.id)}
+      onClick={() => openProject(project.id)}
       onKeyDown={(e) => {
-        if (e.key === "Enter") onOpen?.(project.id);
+        if (e.key === "Enter") openProject(project.id);
       }}
       aria-label={project.title}
     >

@@ -1,6 +1,13 @@
 import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import { ROUTE_NAMES } from "../routes/constants";
 
 export default function Sidebar() {
+  const { pathname } = useLocation();
+  const linkClass = (path: string) =>
+    `text-sm px-2 py-1 rounded-md hover:text-orange-600 ${
+      pathname === path ? "text-orange-600 font-medium" : "text-fg"
+    }`;
   return (
     <aside className="hidden md:flex flex-col w-56 p-4 border-r border-border bg-bg">
       <div className="flex items-center gap-2 mb-6">
@@ -10,22 +17,31 @@ export default function Sidebar() {
         <span className="font-semibold">TaskWise</span>
       </div>
 
-      <nav className="flex flex-col gap-3 text-sm">
-        <a href="/dashboard" className="hover:text-orange-600">
+      <nav className="flex flex-col gap-2">
+        <Link
+          to={ROUTE_NAMES.DASHBOARD}
+          className={linkClass(ROUTE_NAMES.DASHBOARD)}
+        >
           Dashboard
-        </a>
-        <a href="/projects" className="hover:text-orange-600">
+        </Link>
+        <Link
+          to={ROUTE_NAMES.PROJECTS}
+          className={linkClass(ROUTE_NAMES.PROJECTS)}
+        >
           Projects
-        </a>
-        <a href="/tasks" className="hover:text-orange-600">
+        </Link>
+        <Link to={ROUTE_NAMES.TASKS} className={linkClass(ROUTE_NAMES.TASKS)}>
           My Tasks
-        </a>
-        <a href="/users" className="hover:text-orange-600">
+        </Link>
+        <Link to={ROUTE_NAMES.USERS} className={linkClass(ROUTE_NAMES.USERS)}>
           User Management
-        </a>
-        <a href="/settings" className="hover:text-orange-600">
+        </Link>
+        <Link
+          to={ROUTE_NAMES.SETTINGS}
+          className={linkClass(ROUTE_NAMES.SETTINGS)}
+        >
           Settings
-        </a>
+        </Link>
       </nav>
     </aside>
   );
