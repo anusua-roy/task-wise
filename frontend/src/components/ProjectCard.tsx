@@ -10,6 +10,12 @@ export default function ProjectCard({
   
 }) {
   const navigate = useNavigate()
+
+   const tasks = project.tasks ?? [];
+   const total = tasks.length;
+   const completed = tasks.filter((t) => t.done).length;
+   const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
+
   function openProject(id: string) {
     navigate(ROUTE_NAMES.PROJECT(id));
   }
@@ -31,14 +37,14 @@ export default function ProjectCard({
             {project.description}
           </p>
         </div>
-        <div className="text-sm text-muted">{project.progress ?? 0}%</div>
+        <div className="text-sm text-muted">{progress ?? 0}%</div>
       </div>
 
       <div className="mt-3">
         <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
           <div
             className="h-full bg-orange-600"
-            style={{ width: `${project.progress ?? 6}%` }}
+            style={{ width: `${progress}%` }}
             aria-hidden
           />
         </div>

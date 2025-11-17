@@ -1,8 +1,18 @@
 import React, { useState } from "react";
-import { USER_TYPE } from "../types/user";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { ROUTE_NAMES } from "../routes/constants";
 
-export default function SignIn({ onSign }: { onSign: (u: USER_TYPE) => void }) {
+export default function SignIn() {
   const [email, setEmail] = useState("");
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
+
+  function handleSSO() {
+    const u = { name: "SSO User", email: "" };
+    signIn(u);
+    navigate(ROUTE_NAMES.DASHBOARD, { replace: true });
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-bg text-fg">
@@ -12,7 +22,7 @@ export default function SignIn({ onSign }: { onSign: (u: USER_TYPE) => void }) {
             ✓
           </div>
           <div>
-            <h1 className="text-lg font-semibold">Welcome to TaskWise</h1>
+            <h1 className="text-lg font-semibold">Welcome</h1>
             <p className="text-sm text-muted">
               Sign in to access your dashboard.
             </p>
@@ -21,7 +31,7 @@ export default function SignIn({ onSign }: { onSign: (u: USER_TYPE) => void }) {
 
         <button
           className="w-full py-2.5 bg-orange-600 text-white rounded-lg font-medium"
-          onClick={() => onSign({ name: "SSO User" })}
+          onClick={handleSSO}
         >
           Sign in with SSO
         </button>
@@ -31,7 +41,6 @@ export default function SignIn({ onSign }: { onSign: (u: USER_TYPE) => void }) {
         </div>
 
         <input
-          type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
@@ -40,7 +49,10 @@ export default function SignIn({ onSign }: { onSign: (u: USER_TYPE) => void }) {
 
         <button
           className="w-full py-2.5 rounded-lg border border-border bg-white"
-          onClick={() => onSign({ name: email || "Guest", email })}
+          onClick={() => {
+            signIn({ name: email || "Guest", email });
+            navigate(ROUTE_NAMES.DASHBOARD, { replace: true });
+          }}
         >
           Sign in
         </button>

@@ -4,26 +4,36 @@ import Dashboard from "../pages/Dashboard";
 import Projects from "../pages/Projects";
 import ProjectDetail from "../pages/ProjectDetail";
 import SignIn from "../pages/SignIn";
+import Layout from "../components/Layout";
 import { ROUTE_NAMES } from "./constants";
+import { useAuth } from "../contexts/AuthContext";
 
-function ProtectedRoute({ children, user }: { children: JSX.Element; user: any }) {
-  if (!user) return <Navigate to="/signin" replace />;
+function ProtectedRoute({
+  user,
+  children,
+}: {
+  user: any;
+  children: JSX.Element;
+}) {
+  if (!user) return <Navigate to={ROUTE_NAMES.SIGNIN} replace />;
   return children;
 }
 
-export default function AppRoutes({
-  user,
-  onSign,
-  onSignOut,
-}: {
-  user: any;
-  onSign: (u: any) => void;
-  onSignOut: () => void;
-}) {
+export default function AppRoutes() {
+  const { user, initialized } = useAuth();
+
+  // while auth initializes, render nothing (or a loader)
+  if (!initialized)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading…
+      </div>
+    );
+
   return (
     <Routes>
-      {/* Public route */}
-      <Route path={ROUTE_NAMES.SIGNIN} element={<SignIn onSign={onSign} />} />
+      {/* Public */}
+      <Route path={ROUTE_NAMES.SIGNIN} element={<SignIn />} />
 
       {/* Redirect root */}
       <Route
@@ -37,38 +47,28 @@ export default function AppRoutes({
         }
       />
 
-      {/* Protected routes */}
+      {/* Protected pages with one shared layout */}
       <Route
-        path={ROUTE_NAMES.DASHBOARD}
         element={
           <ProtectedRoute user={user}>
-            <Dashboard />
+            <Layout />
           </ProtectedRoute>
         }
-      />
-
-      <Route
-        path={ROUTE_NAMES.PROJECTS}
-        element={
-          <ProtectedRoute user={user}>
-            <Projects />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path={ROUTE_NAMES.PROJECT(":id")}
-        element={
-          <ProtectedRoute user={user}>
-            <ProjectDetail onSignOut={onSignOut} />
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route path={ROUTE_NAMES.DASHBOARD} element={<Dashboard />} />
+        <Route path={ROUTE_NAMES.PROJECTS} element={<Projects />} />
+        <Route path={ROUTE_NAMES.PROJECT(":id")} element={<ProjectDetail />} />
+      </Route>
 
       {/* Fallback */}
       <Route
         path="*"
-        element={<Navigate to={user ? ROUTE_NAMES.DASHBOARD : ROUTE_NAMES.SIGNIN} replace />}
+        element={
+          <Navigate
+            to={user ? ROUTE_NAMES.DASHBOARD : ROUTE_NAMES.SIGNIN}
+            replace
+          />
+        }
       />
     </Routes>
   );

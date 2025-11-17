@@ -1,14 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { ROUTE_NAMES } from "../routes/constants";
 
 export default function Header() {
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
-  const raw =
-    typeof window !== "undefined" ? localStorage.getItem("tw_user") : null;
-  const user = raw ? JSON.parse(raw) : null;
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -20,8 +19,7 @@ export default function Header() {
   }, []);
 
   function handleSignOut() {
-    localStorage.removeItem("tw_user");
-    // navigate to signin
+    signOut();
     navigate(ROUTE_NAMES.SIGNIN, { replace: true });
   }
 
@@ -35,14 +33,10 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-3 mt-3 md:mt-0">
-        <button className="px-3 py-2 border border-border rounded-lg text-sm">
-          Filter
-        </button>
         <button className="px-3 py-2 rounded-lg bg-orange-600 text-white text-sm">
           New Project
         </button>
 
-        {/* User dropdown */}
         <div
           className="relative"
           ref={ref}
@@ -58,15 +52,15 @@ export default function Header() {
 
           {open && (
             <div
-              className="absolute right-0 mt-2 w-44 bg-white border border-border rounded-md shadow-sm z-50 transform translate-y-1"
+              className="absolute right-0 mt-2 w-44 bg-white dark:bg-slate-800 border border-border rounded-md shadow-md z-50 transform translate-y-1"
               role="menu"
             >
               <button
                 onClick={() => {
                   setOpen(false);
-                  navigate("/profile");
+                  navigate(ROUTE_NAMES.DASHBOARD);
                 }}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100"
+                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
                 role="menuitem"
               >
                 Profile
@@ -76,7 +70,7 @@ export default function Header() {
                   setOpen(false);
                   handleSignOut();
                 }}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100"
+                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
                 role="menuitem"
               >
                 Logout
