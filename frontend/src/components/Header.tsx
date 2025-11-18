@@ -1,18 +1,60 @@
+// src/components/Header.tsx
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { ROUTE_NAMES } from "../routes/constants";
+
+/**
+ * Route metadata table:
+ * - Expand this list as needed.
+ * - First matching entry is used.
+ */
+const ROUTE_META = [
+  {
+    test: (p: string) => p === "/" || p === "/projects",
+    title: "Projects",
+    description: "Browse and manage your projects.",
+  },
+  {
+    test: (p: string) => p.startsWith("/projects/"),
+    title: "Project Details",
+    description: "Detailed view of the selected project and its tasks.",
+  },
+  {
+    test: (p: string) => p.startsWith("/my-tasks"),
+    title: "My Tasks",
+    description: "Tasks assigned to you and your current progress.",
+  },
+  {
+    test: (p: string) => p.startsWith("/settings"),
+    title: "Settings",
+    description: "Manage your account and application settings.",
+  },
+];
 
 export default function Header() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
+
+  const { pathname } = location;
+
+  // Find route-specific metadata
+  const match = ROUTE_META.find((r) => r.test(pathname));
+
+  // Fallbacks (REQUIRED CHANGE YOU ASKED FOR)
+  const title = match ? match.title : "TaskWise";
+  const description = match
+    ? match.description
+    : "A clean workspace for your projects and tasks.";
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
       if (!ref.current) return;
-      if (!ref.current.contains(e.target as Node)) setOpen(false);
+      if (!(e.target instanceof Node)) return;
+      if (!ref.current.contains(e.target)) setOpen(false);
     }
     document.addEventListener("click", onDoc);
     return () => document.removeEventListener("click", onDoc);
@@ -23,37 +65,39 @@ export default function Header() {
     navigate(ROUTE_NAMES.SIGNIN, { replace: true });
   }
 
+  // Update browser tab title
+  useEffect(() => {
+    try {
+      document.title = `${title} — TaskWise`;
+    } catch {}
+  }, [title]);
+
   return (
-    <header className="flex flex-col md:flex-row md:items-center md:justify-between mb-5">
-      <div>
-        <h1 className="text-xl font-semibold">Dashboard</h1>
-        <p className="text-muted text-sm">
-          Here’s a summary of your projects and tasks.
-        </p>
-      </div>
+    <header className="border-b bg-[color:var(--bg)] border-[color:var(--muted-border)]">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-start justify-between gap-4">
 
-      <div className="flex items-center gap-3 mt-3 md:mt-0">
-        <button className="px-3 py-2 rounded-lg bg-orange-600 text-white text-sm">
-          New Project
-        </button>
+        {/* Dynamic Title + Description */}
+        <div>
+          <h1 className="text-lg font-semibold">{title}</h1>
+          <p className="text-sm text-[color:var(--muted)] mt-1">{description}</p>
+        </div>
 
-        <div
-          className="relative"
-          ref={ref}
-          aria-expanded={open}
-          aria-haspopup="true"
-        >
+        {/* Avatar + Menu */}
+        <div className="relative" ref={ref}>
           <button
             onClick={() => setOpen((s) => !s)}
+            aria-haspopup="true"
+            aria-expanded={open}
             className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-sm"
+            type="button"
           >
             {user?.name ? user.name[0].toUpperCase() : "U"}
           </button>
 
           {open && (
             <div
-              className="absolute right-0 mt-2 w-44 bg-white dark:bg-slate-800 border border-border rounded-md shadow-md z-50 transform translate-y-1"
               role="menu"
+              className="absolute right-0 mt-2 w-40 rounded-md border bg-[color:var(--card-bg)] shadow-lg z-50"
             >
               <button
                 onClick={() => {
@@ -65,12 +109,13 @@ export default function Header() {
               >
                 Profile
               </button>
+
               <button
                 onClick={() => {
                   setOpen(false);
                   handleSignOut();
                 }}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
+                className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-slate-50"
                 role="menuitem"
               >
                 Logout
