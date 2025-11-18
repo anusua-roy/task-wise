@@ -1,7 +1,7 @@
 // src/api/tasks.ts
 // Replace these mock functions with real fetch/axios calls when backend is ready.
 
-import { Task } from '../types/task';
+import { Task } from "../types/task.type";
 
 const mockTasks: Task[] = [
   {

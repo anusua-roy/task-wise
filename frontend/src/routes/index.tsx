@@ -7,6 +7,7 @@ import SignIn from "../pages/SignIn";
 import Layout from "../components/Layout";
 import { ROUTE_NAMES } from "./constants";
 import { useAuth } from "../contexts/AuthContext";
+import MyTasksPage from "../pages/MyTasks";
 
 function ProtectedRoute({
   user,
@@ -58,6 +59,7 @@ export default function AppRoutes() {
         <Route path={ROUTE_NAMES.DASHBOARD} element={<Dashboard />} />
         <Route path={ROUTE_NAMES.PROJECTS} element={<Projects />} />
         <Route path={ROUTE_NAMES.PROJECT(":id")} element={<ProjectDetail />} />
+        <Route path={ROUTE_NAMES.TASKS} element={<MyTasksPage/>}/>
       </Route>
 
       {/* Fallback */}

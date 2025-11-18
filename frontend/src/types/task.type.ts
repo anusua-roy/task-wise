@@ -1,4 +1,4 @@
-l// src/types/task.ts
+// src/types/task.ts
 export type TaskStatus = 'todo' | 'in-progress' | 'blocked' | 'done';
 
 export interface Task {

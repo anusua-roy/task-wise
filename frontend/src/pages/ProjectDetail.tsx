@@ -43,8 +43,9 @@ export default function ProjectDetail() {
       title,
       assignee: undefined,
       status: "todo",
-      due: undefined,
-      priority: "medium",
+      dueDate: undefined,
+      // priority: "medium",
+      createdAt: new Date().toISOString(),
     };
     setTasks((prev) => [newTask, ...prev]);
   }
@@ -115,14 +116,14 @@ export default function ProjectDetail() {
               <div className="flex-[3]">
                 <div className="font-medium text-sm">{t.title}</div>
                 <div className="text-xs text-muted md:hidden mt-1">
-                  {t.assignee ?? "Unassigned"} • {formatTaskStatus(t.status)} •{" "}
-                  {t.due ?? "No due date"}
+                  {t.assignee?.name ?? "Unassigned"} •{" "}
+                  {formatTaskStatus(t.status)} • {t?.dueDate ?? "No due date"}
                 </div>
               </div>
 
               {/* Assignee */}
               <div className="flex-[1] hidden md:block text-sm text-muted">
-                {t.assignee ?? "—"}
+                {t.assignee?.name ?? "—"}
               </div>
 
               {/* Status badge */}
@@ -132,7 +133,7 @@ export default function ProjectDetail() {
                     "px-2 py-1 text-xs rounded-md " +
                     (t.status === "done"
                       ? "bg-green-100 text-green-700"
-                      : t.status === "inprogress"
+                      : t.status === "in-progress"
                       ? "bg-yellow-100 text-yellow-800"
                       : "bg-slate-100 text-slate-800")
                   }
@@ -143,7 +144,7 @@ export default function ProjectDetail() {
 
               {/* Due date */}
               <div className="flex-[1] hidden md:block text-sm text-muted">
-                {t.due ?? "—"}
+                {t.dueDate ?? "—"}
               </div>
             </div>
           ))
