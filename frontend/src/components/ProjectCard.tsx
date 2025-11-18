@@ -1,20 +1,15 @@
 import React from "react";
-import { PROJECT_TYPE } from "../types/project";
+import { PROJECT_TYPE } from "../types/project.type";
 import { useNavigate } from "react-router-dom";
 import { ROUTE_NAMES } from "../routes/constants";
 
-export default function ProjectCard({
-  project,
-}: {
-  project: PROJECT_TYPE;
-  
-}) {
-  const navigate = useNavigate()
+export default function ProjectCard({ project }: { project: PROJECT_TYPE }) {
+  const navigate = useNavigate();
 
-   const tasks = project.tasks ?? [];
-   const total = tasks.length;
-   const completed = tasks.filter((t) => t.done).length;
-   const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
+  const tasks = project.tasks ?? [];
+  const total = tasks.length;
+  const completed = tasks.filter((t) => t.done).length;
+  const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   function openProject(id: string) {
     navigate(ROUTE_NAMES.PROJECT(id));

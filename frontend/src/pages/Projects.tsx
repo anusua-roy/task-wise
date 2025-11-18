@@ -4,7 +4,7 @@ import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import ProjectCard from "../components/ProjectCard";
 import { PROJECTS } from "../data/projects";
-import { PROJECT_TYPE } from "../types/project";
+import { PROJECT_TYPE } from "../types/project.type";
 import { ROUTE_NAMES } from "../routes/constants";
 
 export default function Projects() {

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Breadcrumbs from "../components/Breadcrumbs";
 import { PROJECTS } from "../data/projects";
-import { Task } from "../types/task";
+import { Task } from "../types/task.type";
 import { ROUTE_NAMES } from "../routes/constants";
 
 export default function ProjectDetail() {
