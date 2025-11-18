@@ -1,10 +1,14 @@
-export type TaskStatus = "todo" | "inprogress" | "done";
+l// src/types/task.ts
+export type TaskStatus = 'todo' | 'in-progress' | 'blocked' | 'done';
 
-export type Task = {
+export interface Task {
   id: string;
   title: string;
-  assignee?: string; // just a name for now — later could be {id,name,avatar}
+  description?: string;
   status: TaskStatus;
-  due?: string; // ISO date or human string
-  priority?: "low" | "medium" | "high";
-};
+  tags?: string[];
+  assignee?: { id: string; name: string } | null;
+  dueDate?: string | null; // ISO string
+  createdAt: string; // ISO
+  updatedAt?: string; // ISO
+}
