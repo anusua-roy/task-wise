@@ -1,14 +1,14 @@
 import React from "react";
-import { PROJECT_TYPE } from "../types/project.type";
+import { IProject } from "../types/project.type";
 import { useNavigate } from "react-router-dom";
 import { ROUTE_NAMES } from "../routes/constants";
 
-export default function ProjectCard({ project }: { project: PROJECT_TYPE }) {
+export default function ProjectCard({ project }: { project: IProject }) {
   const navigate = useNavigate();
 
   const tasks = project.tasks ?? [];
   const total = tasks.length;
-  const completed = tasks.filter((t) => t.done).length;
+  const completed = tasks.filter((t) => t.status==="done").length;
   const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   function openProject(id: string) {

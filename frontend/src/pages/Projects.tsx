@@ -5,7 +5,7 @@ import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import ProjectCard from "../components/ProjectCard";
 import { PROJECTS } from "../data/projects";
-import { Project } from "../types/project.type";
+import { IProject } from "../types/project.type";
 import { ROUTE_NAMES } from "../routes/constants";
 import { useForm } from "react-hook-form";
 
@@ -20,8 +20,8 @@ type FormValues = {
 export default function Projects() {
   const [q, setQ] = useState("");
   const navigate = useNavigate();
-  const [items, setItems] = useState<Project[]>(PROJECTS);
-  const [editing, setEditing] = useState<Project | null>(null);
+  const [items, setItems] = useState<IProject[]>(PROJECTS);
+  const [editing, setEditing] = useState<IProject | null>(null);
 
   const { register, handleSubmit, reset } = useForm<FormValues>();
 
@@ -50,7 +50,7 @@ export default function Projects() {
 
   const onSubmit = (data: FormValues) => {
     // minimal payload conversion; keep same Project shape you have
-    const newProject: Project = {
+    const newProject: IProject = {
       id: `p_${Math.random().toString(36).slice(2, 9)}`,
       title: data.title,
       description: data.description || "",
@@ -65,7 +65,7 @@ export default function Projects() {
       // fill optional fields conservatively
       createdAt: new Date().toISOString(),
       updatedAt: undefined,
-    } as unknown as Project;
+    } as unknown as IProject;
 
     setItems((s) => [newProject, ...s]);
     setShowForm(false);

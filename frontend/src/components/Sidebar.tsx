@@ -1,14 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ROUTE_NAMES } from "../routes/constants";
-
-const SIDEBAR_OPTIONS = {
-  DASHBOARD: "Dashboard",
-  PROJECTS: "Projects",
-  TASKS: "My Tasks",
-  USERS: "User Management",
-  SETTINGS: "Settings",
-};
+import { PROJECT_NAME, SIDEBAR_OPTIONS } from "../constants/App.constants";
 
 export default function Sidebar() {
   const { pathname } = useLocation();
@@ -22,7 +15,7 @@ export default function Sidebar() {
         <div className="w-7 h-7 rounded-md bg-orange-100 flex items-center justify-center text-orange-600">
           ✓
         </div>
-        <span className="font-semibold">TaskWise</span>
+        <span className="font-semibold">{PROJECT_NAME}</span>
       </div>
 
       <nav className="flex flex-col gap-2">

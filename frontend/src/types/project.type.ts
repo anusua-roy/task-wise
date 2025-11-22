@@ -1,5 +1,5 @@
 import { Task } from "./task.type";
-export type Project = {
+export interface IProject {
   id: string;
   title: string;
   description?: string;

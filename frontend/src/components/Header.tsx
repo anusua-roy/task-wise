@@ -2,7 +2,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { ROUTE_NAMES, ROUTE_META } from "../routes/constants";
+import { ROUTE_META , ROUTE_NAMES} from "../routes/constants";
+import { BUTTON_NAMES, PROJECT_DESCRIPTION, PROJECT_NAME } from "../constants/App.constants";
 
 export default function Header() {
   const { user, signOut } = useAuth();
@@ -17,10 +18,10 @@ export default function Header() {
   const match = ROUTE_META.find((r) => r.test(pathname));
 
   // Fallbacks (REQUIRED CHANGE YOU ASKED FOR)
-  const title = match ? match.title : "TaskWise";
+  const title = match ? match.title : PROJECT_NAME;
   const description = match
     ? match.description
-    : "A clean workspace for your projects and tasks.";
+    : PROJECT_DESCRIPTION;
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -80,7 +81,7 @@ export default function Header() {
                 className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
                 role="menuitem"
               >
-                Profile
+                {BUTTON_NAMES.PROFILE}
               </button>
 
               <button
@@ -91,7 +92,7 @@ export default function Header() {
                 className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-slate-50"
                 role="menuitem"
               >
-                Logout
+                {BUTTON_NAMES.LOGOUT}
               </button>
             </div>
           )}
