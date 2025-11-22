@@ -4,13 +4,13 @@ import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import ProjectCard from "../components/ProjectCard";
 import { PROJECTS } from "../data/projects";
-import { PROJECT_TYPE } from "../types/project.type";
+import { IProject } from "../types/project.type";
 import { ROUTE_NAMES } from "../routes/constants";
 
 export default function Projects() {
   const [q, setQ] = useState("");
   const navigate = useNavigate();
-  const [items] = useState<PROJECT_TYPE[]>(PROJECTS);
+  const [items] = useState<IProject[]>(PROJECTS);
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();

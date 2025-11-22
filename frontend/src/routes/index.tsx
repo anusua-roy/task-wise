@@ -8,6 +8,7 @@ import Layout from "../components/Layout";
 import { ROUTE_NAMES } from "./constants";
 import { useAuth } from "../contexts/AuthContext";
 import MyTasksPage from "../pages/MyTasks";
+import { PAGE_LOADING } from "../constants/App.constants";
 
 function ProtectedRoute({
   user,
@@ -27,7 +28,7 @@ export default function AppRoutes() {
   if (!initialized)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        Loading…
+        {PAGE_LOADING}
       </div>
     );
 
@@ -38,7 +39,7 @@ export default function AppRoutes() {
 
       {/* Redirect root */}
       <Route
-        path="/"
+        path={ROUTE_NAMES.ROOT}
         element={
           user ? (
             <Navigate to={ROUTE_NAMES.DASHBOARD} replace />

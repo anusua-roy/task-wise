@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Breadcrumbs from "../components/Breadcrumbs";
 import { PROJECTS } from "../data/projects";
-import { Task } from "../types/task.type";
+import { Task, TaskStatus } from "../types/task.type";
 import { ROUTE_NAMES } from "../routes/constants";
+import { BUTTON_NAMES, ERR_MSG, SIDEBAR_OPTIONS } from "../constants/App.constants";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -50,22 +51,22 @@ export default function ProjectDetail() {
     setTasks((prev) => [newTask, ...prev]);
   }
 
-  function formatTaskStatus(status: string) {
+  function formatTaskStatus(status: TaskStatus) {
     if (status === "todo") return "To Do";
-    if (status === "inprogress") return "In Progress";
+    if (status === "in-progress") return "In Progress";
     if (status === "done") return "Done";
     return status;
   }
 
   if (!project) {
-    return <div className="text-muted">Project not found.</div>;
+    return <div className="text-muted">{ERR_MSG.PROJECT_NOT_FOUND}</div>;
   }
 
   return (
     <div>
       <Breadcrumbs
         items={[
-          { label: "Projects", href: ROUTE_NAMES.PROJECTS },
+          { label: SIDEBAR_OPTIONS.PROJECTS, href: ROUTE_NAMES.PROJECTS },
           { label: project.title },
         ]}
       />
@@ -90,7 +91,7 @@ export default function ProjectDetail() {
             className="px-3 py-2 rounded-lg bg-orange-600 text-white"
             onClick={addTask}
           >
-            Add Task
+           {BUTTON_NAMES.ADD_TASK}
           </button>
         </div>
       </div>
@@ -105,7 +106,7 @@ export default function ProjectDetail() {
         </div>
 
         {tasks.length === 0 ? (
-          <div className="p-4 text-muted">No tasks yet.</div>
+          <div className="p-4 text-muted">{ERR_MSG.NO_TASKS}</div>
         ) : (
           tasks.map((t) => (
             <div

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { ERR_MSG } from "../constants/App.constants";
 
 type User = { name: string; email?: string } | null;
 
@@ -20,7 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const raw = localStorage.getItem("tw_user");
       if (raw) setUser(JSON.parse(raw));
     } catch (e) {
-      console.warn("auth: failed read", e);
+      console.warn(ERR_MSG.AUTH_FAILURE, e);
     } finally {
       setInitialized(true);
     }
@@ -48,6 +49,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  if (!ctx) throw new Error(ERR_MSG.AUTH_FAILURE);
   return ctx;
 }
