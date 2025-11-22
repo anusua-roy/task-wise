@@ -2,35 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { ROUTE_NAMES } from "../routes/constants";
-
-/**
- * Route metadata table:
- * - Expand this list as needed.
- * - First matching entry is used.
- */
-const ROUTE_META = [
-  {
-    test: (p: string) => p === "/" || p === "/projects",
-    title: "Projects",
-    description: "Browse and manage your projects.",
-  },
-  {
-    test: (p: string) => p.startsWith("/projects/"),
-    title: "Project Details",
-    description: "Detailed view of the selected project and its tasks.",
-  },
-  {
-    test: (p: string) => p.startsWith("/tasks"),
-    title: "My Tasks",
-    description: "Tasks assigned to you and your current progress.",
-  },
-  {
-    test: (p: string) => p.startsWith("/settings"),
-    title: "Settings",
-    description: "Manage your account and application settings.",
-  },
-];
+import { ROUTE_NAMES, ROUTE_META } from "../routes/constants";
 
 export default function Header() {
   const { user, signOut } = useAuth();
@@ -103,7 +75,7 @@ export default function Header() {
               <button
                 onClick={() => {
                   setOpen(false);
-                  navigate(ROUTE_NAMES.DASHBOARD);
+                  navigate(ROUTE_NAMES.PROFILE);
                 }}
                 className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
                 role="menuitem"
