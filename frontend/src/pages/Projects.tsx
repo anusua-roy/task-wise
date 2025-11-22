@@ -4,13 +4,13 @@ import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import ProjectCard from "../components/ProjectCard";
 import { PROJECTS } from "../data/projects";
-import { PROJECT_TYPE } from "../types/project.type";
+import { Project } from "../types/project.type";
 import { ROUTE_NAMES } from "../routes/constants";
 
 export default function Projects() {
   const [q, setQ] = useState("");
   const navigate = useNavigate();
-  const [items] = useState<PROJECT_TYPE[]>(PROJECTS);
+  const [items] = useState<Project[]>(PROJECTS);
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -31,6 +31,12 @@ export default function Projects() {
           placeholder="Search projects"
           className="w-full sm:w-64 p-2.5 rounded-lg border border-border bg-white text-sm"
         />
+        <button
+          // onClick={onCreateClick}
+          className="px-3 py-2 rounded-lg bg-orange-600 text-white"
+        >
+          Add Project
+        </button>
       </div>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
