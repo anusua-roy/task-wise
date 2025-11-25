@@ -47,11 +47,11 @@ export default function Header() {
 
   return (
     <header className="border-b bg-[color:var(--bg)] border-[color:var(--muted-border)] mb-4">
-      <div className="w-full mx-auto px-2 sm:px-2 lg:px-2 py-4 flex items-start justify-between gap-4">
+      <div className="w-full mx-auto px-2 sm:px-2 lg:px-2 pb-1 flex items-start justify-between gap-4">
         {/* Dynamic Title + Description */}
         <div>
           <h1 className="text-lg font-semibold">{title}</h1>
-          <p className="text-sm text-[color:var(--muted)] mt-1">
+          <p className="text-sm text-[color:var(--muted)]">
             {description}
           </p>
         </div>
