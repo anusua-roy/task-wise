@@ -8,6 +8,11 @@ import { PROJECTS } from "../data/projects";
 import { IProject } from "../types/project.type";
 import { ROUTE_NAMES } from "../routes/constants";
 import { useForm } from "react-hook-form";
+import {
+  BUTTON_NAMES,
+  EMPTY_STRING,
+  FORM_LABEL,
+} from "../constants/App.constants";
 
 type FormValues = {
   title: string;
@@ -18,7 +23,7 @@ type FormValues = {
 };
 
 export default function Projects() {
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(EMPTY_STRING);
   const navigate = useNavigate();
   const [items, setItems] = useState<IProject[]>(PROJECTS);
   const [editing, setEditing] = useState<IProject | null>(null);
@@ -31,7 +36,7 @@ export default function Projects() {
     return items.filter(
       (p) =>
         p.title.toLowerCase().includes(t) ||
-        (p.description || "").toLowerCase().includes(t)
+        (p.description || EMPTY_STRING).toLowerCase().includes(t)
     );
   }, [q, items]);
 
@@ -39,11 +44,11 @@ export default function Projects() {
 
   const onCreateClick = () => {
     reset({
-      title: "",
-      description: "",
-      tags: "",
-      repoUrl: "",
-      liveUrl: "",
+      title: EMPTY_STRING,
+      description: EMPTY_STRING,
+      tags: EMPTY_STRING,
+      repoUrl: EMPTY_STRING,
+      liveUrl: EMPTY_STRING,
     });
     setShowForm(true);
   };
@@ -53,15 +58,15 @@ export default function Projects() {
     const newProject: IProject = {
       id: `p_${Math.random().toString(36).slice(2, 9)}`,
       title: data.title,
-      description: data.description || "",
+      description: data.description || EMPTY_STRING,
       tags: data.tags
         ? data.tags
             .split(",")
             .map((t) => t.trim())
             .filter(Boolean)
         : [],
-      repoUrl: data.repoUrl || "",
-      liveUrl: data.liveUrl || "",
+      repoUrl: data.repoUrl || EMPTY_STRING,
+      liveUrl: data.liveUrl || EMPTY_STRING,
       // fill optional fields conservatively
       createdAt: new Date().toISOString(),
       updatedAt: undefined,
@@ -84,7 +89,7 @@ export default function Projects() {
           onClick={onCreateClick}
           className="px-3 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700"
         >
-          Add Project
+          {BUTTON_NAMES.ADD_PROJECT}
         </button>
       </div>
 
@@ -102,13 +107,17 @@ export default function Projects() {
             className="bg-white p-4 rounded shadow-xl w-full max-w-lg flex flex-col gap-3"
             role="dialog"
             aria-modal="true"
-            aria-label={editing ? "Edit Project" : "Create Project"}
+            aria-label={
+              editing ? BUTTON_NAMES.EDIT_PROJECT : BUTTON_NAMES.CREATE_PROJECT
+            }
           >
             <h2 className="text-xl font-semibold">
-              {editing ? "Edit Project" : "New Project"}
+              {editing
+                ? BUTTON_NAMES.EDIT_PROJECT
+                : BUTTON_NAMES.CREATE_PROJECT}
             </h2>
             <div>
-              <label className="block text-sm">Title</label>
+              <label className="block text-sm">{FORM_LABEL.TITLE}</label>
               <input
                 {...register("title", { required: true })}
                 className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
@@ -116,7 +125,7 @@ export default function Projects() {
             </div>
 
             <div>
-              <label className="block text-sm">Description</label>
+              <label className="block text-sm">{FORM_LABEL.DESCRIPTION}</label>
               <textarea
                 {...register("description")}
                 className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
@@ -125,7 +134,7 @@ export default function Projects() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm">Tags (comma separated)</label>
+                <label className="block text-sm">{FORM_LABEL.TAGS}</label>
                 <input
                   {...register("tags")}
                   className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
@@ -133,7 +142,7 @@ export default function Projects() {
               </div>
 
               <div>
-                <label className="block text-sm">Repository URL</label>
+                <label className="block text-sm">{FORM_LABEL.REPO_URL}</label>
                 <input
                   {...register("repoUrl")}
                   className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
@@ -142,7 +151,7 @@ export default function Projects() {
             </div>
 
             <div>
-              <label className="block text-sm">Live URL</label>
+              <label className="block text-sm">{FORM_LABEL.LIVE_URL}</label>
               <input
                 {...register("liveUrl")}
                 className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
@@ -155,13 +164,13 @@ export default function Projects() {
                 onClick={() => setShowForm(false)}
                 className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
               >
-                Cancel
+                {BUTTON_NAMES.CANCEL}
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
               >
-                Create
+                {BUTTON_NAMES.CREATE}
               </button>
             </div>
           </form>

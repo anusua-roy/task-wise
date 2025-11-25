@@ -1,3 +1,5 @@
+import { SIDEBAR_OPTIONS, OTHER_PAGE_NAMES, PAGE_DESCRIPTIONS } from "../constants/App.constants";
+
 export const ROUTE_NAMES: any = {
   ROOT: "/",
   SIGNIN: "/signin",
@@ -13,37 +15,37 @@ export const ROUTE_NAMES: any = {
 export const ROUTE_META = [
   {
     test: (p: string) => p === ROUTE_NAMES.ROOT || p === ROUTE_NAMES.DASHBOARD,
-    title: "Dashboard",
-    description: "Overview of your workspace, projects, and tasks.",
+    title: SIDEBAR_OPTIONS.DASHBOARD,
+    description: PAGE_DESCRIPTIONS.DASHBOARD,
   },
   {
     test: (p: string) => p === ROUTE_NAMES.PROJECTS,
-    title: "Projects",
-    description: "Browse and manage your projects.",
+    title: SIDEBAR_OPTIONS.PROJECTS,
+    description: PAGE_DESCRIPTIONS.PROJECTS,
   },
   {
     test: (p: string) => p.startsWith(ROUTE_NAMES.PROJECT("")),
-    title: "Project Details",
-    description: "Detailed view of the selected project and its tasks.",
+    title: OTHER_PAGE_NAMES.PROJECT,
+    description: PAGE_DESCRIPTIONS.PROJECT,
   },
   {
     test: (p: string) => p.startsWith(ROUTE_NAMES.TASKS),
-    title: "My Tasks",
-    description: "Tasks assigned to you and your current progress.",
+    title: SIDEBAR_OPTIONS.TASKS,
+    description: PAGE_DESCRIPTIONS.TASKS,
   },
   {
     test: (p: string) => p.startsWith(ROUTE_NAMES.USERS),
-    title: "User Management",
-    description: "Manage users, roles, and access.",
+    title: SIDEBAR_OPTIONS.USERS,
+    description: PAGE_DESCRIPTIONS.USERS,
   },
   {
     test: (p: string) => p.startsWith(ROUTE_NAMES.PROFILE),
-    title: "Profile",
-    description: "View and update your personal information.",
+    title: OTHER_PAGE_NAMES.PROFILE,
+    description: PAGE_DESCRIPTIONS.PROFILE,
   },
   {
     test: (p: string) => p.startsWith(ROUTE_NAMES.SETTINGS),
-    title: "Settings",
-    description: "Manage your account and application settings.",
+    title: SIDEBAR_OPTIONS.SETTINGS,
+    description: PAGE_DESCRIPTIONS.SETTINGS,
   },
 ];

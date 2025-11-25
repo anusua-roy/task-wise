@@ -41,7 +41,7 @@ export default function Header() {
   // Update browser tab title
   useEffect(() => {
     try {
-      document.title = `${title} — TaskWise`;
+      document.title = `${title} — ${PROJECT_NAME}`;
     } catch {}
   }, [title]);
 

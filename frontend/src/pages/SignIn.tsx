@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { ROUTE_NAMES } from "../routes/constants";
+import { BUTTON_NAMES, EMPTY_STRING } from "../constants/App.constants";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -9,7 +10,7 @@ export default function SignIn() {
   const navigate = useNavigate();
 
   function handleSSO() {
-    const u = { name: "SSO User", email: "" };
+    const u = { name: "SSO User", email: EMPTY_STRING };
     signIn(u);
     navigate(ROUTE_NAMES.DASHBOARD, { replace: true });
   }
@@ -33,7 +34,7 @@ export default function SignIn() {
           className="w-full py-2.5 bg-orange-600 text-white rounded-lg font-medium"
           onClick={handleSSO}
         >
-          Sign in with SSO
+          {BUTTON_NAMES.SSO_LOGIN}
         </button>
 
         <div className="my-4 text-center text-muted text-sm">

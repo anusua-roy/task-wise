@@ -5,6 +5,7 @@ import { Task } from "../types/task.type";
 import * as tasksApi from "../api/tasks.service";
 import TaskCard from "../components/TaskCard";
 import TaskFilters from "../components/TaskFilters";
+import { EMPTY_STRING } from "../constants/App.constants";
 
 type FormValues = {
   title: string;
@@ -18,7 +19,7 @@ export default function MyTasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(EMPTY_STRING);
   const [statusFilter, setStatusFilter] = useState<"all" | Task["status"]>(
     "all"
   );
@@ -54,7 +55,7 @@ export default function MyTasksPage() {
       if (tagFilter && !(t.tags || []).includes(tagFilter)) return false;
       if (query.trim()) {
         const q = query.toLowerCase();
-        return (t.title + " " + (t.description || ""))
+        return (t.title + " " + (t.description || EMPTY_STRING))
           .toLowerCase()
           .includes(q);
       }
@@ -63,18 +64,18 @@ export default function MyTasksPage() {
   }, [tasks, statusFilter, tagFilter, query]);
 
   const onClear = () => {
-    setQuery("");
+    setQuery(EMPTY_STRING);
     setStatusFilter("all");
     setTagFilter(undefined);
   };
 
   const onCreateClick = () => {
     reset({
-      title: "",
-      description: "",
+      title: EMPTY_STRING,
+      description: EMPTY_STRING,
       status: "todo",
-      tags: "",
-      dueDate: "",
+      tags: EMPTY_STRING,
+      dueDate: EMPTY_STRING,
     });
     setEditing(null);
     setShowForm(true);
@@ -84,10 +85,10 @@ export default function MyTasksPage() {
     setEditing(task);
     reset({
       title: task.title,
-      description: task.description || "",
+      description: task.description || EMPTY_STRING,
       status: task.status,
       tags: (task.tags || []).join(", "),
-      dueDate: task.dueDate ? task.dueDate.split("T")[0] : "",
+      dueDate: task.dueDate ? task.dueDate.split("T")[0] : EMPTY_STRING,
     });
     setShowForm(true);
   };
