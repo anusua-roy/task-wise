@@ -3,6 +3,7 @@ backend/venv/
 backend/.venv/
 __pycache__/
 *.py[cod]
+*.db
 
 # Env files
 .env
