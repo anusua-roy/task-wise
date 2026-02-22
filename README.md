@@ -50,7 +50,7 @@ This repository contains the template structure for the Task Tracker application
 4.  **Run the API Server:**
 
     ```bash
-    uvicorn src.main:app --reload
+    uvicorn app.main:app --reload
     # This runs the API on [http://127.0.0.1:8000](http://127.0.0.1:8000)
     ```
 
