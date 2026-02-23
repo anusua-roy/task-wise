@@ -1,0 +1,46 @@
+name: Backend CD
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 736578948084.dkr.ecr.ap-south-1.amazonaws.com
+
+      - name: Build Docker image
+        run: docker build -t taskwise-backend ./backend
+
+      - name: Tag Docker image
+        run: docker tag taskwise-backend:latest 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
+
+      - name: Push Docker image
+        run: docker push 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker stop $(docker ps -q) || true
+            docker rm $(docker ps -aq) || true
+            docker pull 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
+            docker run -d -p 8000:8000 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest

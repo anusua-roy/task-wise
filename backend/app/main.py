@@ -8,6 +8,7 @@ app = FastAPI(title="FSE Task Tracker")
 
 Base.metadata.create_all(bind=engine)
 
+# for CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # later restrict
