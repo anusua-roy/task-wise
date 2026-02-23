@@ -20,7 +20,7 @@ app.add_middleware(
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "App is running..."}
 
 
 app.include_router(users.router)
