@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.base import Base
 
+
 class Project(Base):
     __tablename__ = "projects"
 

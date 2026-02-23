@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.base import Base
 
+
 class Task(Base):
     __tablename__ = "tasks"
 

@@ -27,22 +27,14 @@ def run():
     db.commit()
 
     # ---- Users ----
-    admin = User(
-        email="admin@taskwise.com",
-        name="Admin",
-        role_id=admin_role.id
-    )
+    admin = User(email="admin@taskwise.com", name="Admin", role_id=admin_role.id)
 
     creator = User(
-        email="creator@taskwise.com",
-        name="Creator",
-        role_id=creator_role.id
+        email="creator@taskwise.com", name="Creator", role_id=creator_role.id
     )
 
     readonly = User(
-        email="readonly@taskwise.com",
-        name="ReadOnly",
-        role_id=readonly_role.id
+        email="readonly@taskwise.com", name="ReadOnly", role_id=readonly_role.id
     )
 
     db.add_all([admin, creator, readonly])
@@ -50,19 +42,19 @@ def run():
 
     # ---- Project ----
     project = Project(
-        name="Demo Project",
-        description="Seeded Project",
-        owner_id=creator.id
+        name="Demo Project", description="Seeded Project", owner_id=creator.id
     )
 
     db.add(project)
     db.commit()
 
     # ---- Project Members ----
-    db.add_all([
-        ProjectMember(project_id=project.id, user_id=creator.id),
-        ProjectMember(project_id=project.id, user_id=readonly.id)
-    ])
+    db.add_all(
+        [
+            ProjectMember(project_id=project.id, user_id=creator.id),
+            ProjectMember(project_id=project.id, user_id=readonly.id),
+        ]
+    )
     db.commit()
 
     # ---- Task ----
@@ -71,7 +63,7 @@ def run():
         status="New",
         project_id=project.id,
         owner_id=readonly.id,
-        created_by_id=creator.id
+        created_by_id=creator.id,
     )
 
     db.add(task)

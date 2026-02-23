@@ -12,6 +12,7 @@ ROLE_HIERARCHY = {
     "Admin": 3,
 }
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -19,9 +20,10 @@ def get_db():
     finally:
         db.close()
 
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     token = credentials.credentials
 
@@ -33,9 +35,11 @@ def get_current_user(
 
     return user
 
+
 def require_role(required_role: str):
     def role_checker(user: User = Depends(get_current_user)):
         if ROLE_HIERARCHY[user.role.name] < ROLE_HIERARCHY[required_role]:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
         return user
+
     return role_checker

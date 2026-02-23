@@ -1,9 +1,6 @@
 from fastapi import FastAPI
 from app.db.base import Base
-from app.db.session import engine, SessionLocal
-from app.models.role import Role
-from app.models.user import User
-from app.models.project_member import ProjectMember
+from app.db.session import engine
 from app.api import users, roles, projects, tasks
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -19,9 +16,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
 
 app.include_router(users.router)
 app.include_router(roles.router)

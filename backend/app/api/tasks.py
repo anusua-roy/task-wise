@@ -2,16 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.models.task import Task
-from app.models.project_member import ProjectMember
 from app.models.user import User
 from app.core.security import get_current_user, require_role
 
-router = APIRouter(
-    prefix="/api/tasks",
-    tags=["Tasks"]
-)
+router = APIRouter(prefix="/api/tasks", tags=["Tasks"])
 
 VALID_STATUSES = ["New", "In-Progress", "Blocked", "Completed", "Not Started"]
+
 
 def get_db():
     db = SessionLocal()
@@ -20,11 +17,12 @@ def get_db():
     finally:
         db.close()
 
+
 @router.post("/", dependencies=[Depends(require_role("Task Creator"))])
 def create_task(
     payload: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     if payload["status"] not in VALID_STATUSES:
         raise HTTPException(status_code=400, detail="Invalid status")
@@ -35,7 +33,7 @@ def create_task(
         status=payload["status"],
         project_id=payload["project_id"],
         owner_id=payload["owner_id"],
-        created_by_id=current_user.id
+        created_by_id=current_user.id,
     )
 
     db.add(task)
@@ -50,7 +48,7 @@ def update_task(
     task_id: str,
     payload: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     task = db.query(Task).filter(Task.id == task_id).first()
 

@@ -6,10 +6,8 @@ from app.models.role import Role
 from app.schemas.user import UserCreate, UserRead
 from app.core.security import get_current_user, require_role
 
-router = APIRouter(
-    prefix="/api/users",
-    tags=["Users"]
-)
+router = APIRouter(prefix="/api/users", tags=["Users"])
+
 
 def get_db():
     db = SessionLocal()
@@ -18,42 +16,36 @@ def get_db():
     finally:
         db.close()
 
+
 # Admin only
 @router.post("/", response_model=UserRead)
 def create_user(
     payload: UserCreate,
     db: Session = Depends(get_db),
-    user=Depends(require_role("Admin"))
+    user=Depends(require_role("Admin")),
 ):
     role = db.query(Role).filter(Role.id == payload.role_id).first()
     if not role:
         raise HTTPException(status_code=400, detail="Invalid role")
 
-    new_user = User(
-        email=payload.email,
-        name=payload.name,
-        role_id=payload.role_id
-    )
+    new_user = User(email=payload.email, name=payload.name, role_id=payload.role_id)
 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return new_user
 
+
 # Admin only
 @router.get("/", response_model=list[UserRead])
-def list_users(
-    db: Session = Depends(get_db),
-    user=Depends(require_role("Admin"))
-):
+def list_users(db: Session = Depends(get_db), user=Depends(require_role("Admin"))):
     return db.query(User).all()
+
 
 # Admin or Self
 @router.get("/{user_id}", response_model=UserRead)
 def get_user(
-    user_id: str,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    user_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_user)
 ):
     target = db.query(User).filter(User.id == user_id).first()
     if not target:

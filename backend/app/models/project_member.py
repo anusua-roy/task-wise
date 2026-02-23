@@ -3,6 +3,7 @@ from sqlalchemy import Column, String, ForeignKey, DateTime
 from datetime import datetime
 from app.db.base import Base
 
+
 class ProjectMember(Base):
     __tablename__ = "project_members"
 
