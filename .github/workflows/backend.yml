@@ -15,29 +15,29 @@ jobs:
       run:
         working-directory: backend
 
-      steps:
-        - name: Checkout Code
-          uses: actions/checkout@v3
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-        - name: Setup Python
-          uses: actions/setup-python@v4
-          with:
-            python-version: "3.11"
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
-        - name: Install Dependencies
-          run: pip install -r requirements.txt
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
 
-        - name: Format Check (Black)
-          run: black --check app tests
+      - name: Format Check (Black)
+        run: black --check app tests
 
-        - name: Lint Check (Flake8)
-          run: flake8 app tests
+      - name: Lint Check (Flake8)
+        run: flake8 app tests
 
-        - name: Run Tests (Pytest)
-          run: pytest
+      - name: Run Tests (Pytest)
+        run: pytest
 
-        - name: Validate Docker Build
-          run: docker build -t taskwise-backend .
+      - name: Validate Docker Build
+        run: docker build -t taskwise-backend .
 
   deploy:
     needs: test
@@ -45,7 +45,8 @@ jobs:
     if: github.event_name == 'push'
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
