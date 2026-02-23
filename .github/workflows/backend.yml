@@ -1,0 +1,80 @@
+name: Backend CI/CD
+
+on:
+  pull_request:
+    branches: ["master"]
+
+  push:
+    branches: ["master"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+      steps:
+        - name: Checkout Code
+          uses: actions/checkout@v3
+
+        - name: Setup Python
+          uses: actions/setup-python@v4
+          with:
+            python-version: "3.11"
+
+        - name: Install Dependencies
+          run: pip install -r requirements.txt
+
+        - name: Format Check (Black)
+          run: black --check app tests
+
+        - name: Lint Check (Flake8)
+          run: flake8 app tests
+
+        - name: Run Tests (Pytest)
+          run: pytest
+
+        - name: Validate Docker Build
+          run: docker build -t taskwise-backend .
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 736578948084.dkr.ecr.ap-south-1.amazonaws.com
+
+      - name: Build Docker image
+        run: docker build -t taskwise-backend ./backend
+
+      - name: Tag Docker image
+        run: docker tag taskwise-backend:latest 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
+
+      - name: Push Docker image
+        run: docker push 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker stop taskwise || true
+            docker rm taskwise || true
+            docker pull 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
+            docker run -d --name taskwise -p 8000:8000 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
