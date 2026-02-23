@@ -75,7 +75,10 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker ps -q --filter "publish=8000" | xargs -r docker stop
-            docker ps -aq --filter "publish=8000" | xargs -r docker rm
+            docker rm -f taskwise || true
             docker pull 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
-            docker run -d --name taskwise -p 8000:8000 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
+            docker run -d \
+              --name taskwise \
+              --restart unless-stopped \
+              -p 8000:8000 \
+              736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
