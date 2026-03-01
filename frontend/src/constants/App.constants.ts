@@ -14,6 +14,7 @@ export const BUTTON_NAMES = {
   CREATE: "Create",
   CANCEL: "Cancel",
   SSO_LOGIN: "Sign in with SSO",
+  SIGN_IN: "Sign In",
 };
 
 export const ERR_MSG = {
@@ -52,4 +53,3 @@ export const FORM_LABEL = {
   REPO_URL: "Repository URL",
   LIVE_URL: "Live URL",
 };
-
