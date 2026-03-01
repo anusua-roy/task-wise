@@ -7,11 +7,6 @@ on:
   push:
     branches: ["master"]
 
-env:
-  AWS_REGION: ap-south-1
-  ECR_REGISTRY: 736578948084.dkr.ecr.ap-south-1.amazonaws.com
-  ECR_REPOSITORY: taskwise-backend
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -62,44 +57,44 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to ECR (Runner)
         run: |
-          aws ecr get-login-password --region $AWS_REGION \
-          | docker login --username AWS --password-stdin $ECR_REGISTRY
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+          | docker login --username AWS --password-stdin 736578948084.dkr.ecr.ap-south-1.amazonaws.com
 
       - name: Build Docker Image
         run: |
-          docker build -t $ECR_REPOSITORY:${{ github.sha }} .
+          docker build -t taskwise-backend:${{ github.sha }} .
 
       - name: Tag Docker Image
         run: |
-          docker tag $ECR_REPOSITORY:${{ github.sha }} \
-          $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+          docker tag taskwise-backend:${{ github.sha }} \
+          736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:${{ github.sha }}
 
       - name: Push Docker Image
         run: |
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+          docker push 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:${{ github.sha }}
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
+          username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
 
             echo "Logging into ECR on EC2..."
-            aws ecr get-login-password --region $AWS_REGION \
-            | docker login --username AWS --password-stdin $ECR_REGISTRY
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+            | docker login --username AWS --password-stdin 736578948084.dkr.ecr.ap-south-1.amazonaws.com
 
             echo "Stopping existing container..."
             docker rm -f taskwise || true
 
             echo "Pulling new image..."
-            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+            docker pull 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:${{ github.sha }}
 
             echo "Starting new container..."
             docker run -d \
@@ -108,6 +103,6 @@ jobs:
               -p 8000:8000 \
               -v ~/taskwise-data:/app/data \
               -e DATABASE_URL=sqlite:///./data/taskwise.db \
-              $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+              736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:${{ github.sha }}
 
             echo "Deployment completed successfully."
