@@ -7,6 +7,11 @@ on:
   push:
     branches: ["master"]
 
+env:
+  AWS_REGION: ap-south-1
+  ECR_REGISTRY: 736578948084.dkr.ecr.ap-south-1.amazonaws.com
+  ECR_REPOSITORY: taskwise-backend
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -27,13 +32,13 @@ jobs:
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
-      - name: Format Check (Black)
+      - name: Format Check
         run: black --check app tests
 
-      - name: Lint Check (Flake8)
+      - name: Lint Check
         run: flake8 app tests
 
-      - name: Run Tests (Pytest)
+      - name: Run Tests
         run: pytest
 
       - name: Validate Docker Build
@@ -44,41 +49,65 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
 
+    defaults:
+      run:
+        working-directory: backend
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to ECR
+      - name: Login to ECR (Runner)
         run: |
-          aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 736578948084.dkr.ecr.ap-south-1.amazonaws.com
+          aws ecr get-login-password --region $AWS_REGION \
+          | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-      - name: Build Docker image
-        run: docker build -t taskwise-backend ./backend
+      - name: Build Docker Image
+        run: |
+          docker build -t $ECR_REPOSITORY:${{ github.sha }} .
 
-      - name: Tag Docker image
-        run: docker tag taskwise-backend:latest 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
+      - name: Tag Docker Image
+        run: |
+          docker tag $ECR_REPOSITORY:${{ github.sha }} \
+          $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
 
-      - name: Push Docker image
-        run: docker push 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
+      - name: Push Docker Image
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
 
-      - name: Deploy on EC2
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
+
+            echo "Logging into ECR on EC2..."
+            aws ecr get-login-password --region $AWS_REGION \
+            | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+            echo "Stopping existing container..."
             docker rm -f taskwise || true
-            docker pull 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
+
+            echo "Pulling new image..."
+            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+
+            echo "Starting new container..."
             docker run -d \
               --name taskwise \
               --restart unless-stopped \
               -p 8000:8000 \
-              736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:latest
+              -v ~/taskwise-data:/app/data \
+              -e DATABASE_URL=sqlite:///./data/taskwise.db \
+              $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+
+            echo "Deployment completed successfully."
