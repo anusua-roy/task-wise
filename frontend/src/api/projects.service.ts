@@ -11,3 +11,7 @@ export function createProject(data: { name: string; description?: string }) {
     body: JSON.stringify(data),
   });
 }
+
+export const getProjectById = async (id: string) => {
+  return http<IProject>(`/api/projects/${id}`);
+};

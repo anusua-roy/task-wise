@@ -14,9 +14,22 @@ class Project(Base):
     start_date = Column(DateTime)
     end_date = Column(DateTime)
 
-    owner_id = Column(String, ForeignKey("users.id"))
+    created_by_id = Column(String, ForeignKey("users.id"), nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime)
 
-    owner = relationship("User")
+    # Relationships
+    created_by = relationship("User", back_populates="created_projects")
+
+    members = relationship(
+        "ProjectMember",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+
+    tasks = relationship(
+        "Task",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )

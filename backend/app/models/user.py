@@ -11,9 +11,26 @@ class User(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=False)
-    role_id = Column(String, ForeignKey("roles.id"), nullable=False)
+
+    role_id = Column(String, ForeignKey("roles.id"))
+    role = relationship("Role")
 
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=True)
 
-    role = relationship("Role")
+    # Relationships
+    created_projects = relationship(
+        "Project",
+        back_populates="created_by",
+    )
+
+    project_memberships = relationship(
+        "ProjectMember",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    created_tasks = relationship(
+        "Task",
+        foreign_keys="Task.created_by_id",
+        back_populates="created_by",
+    )
