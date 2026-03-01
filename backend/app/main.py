@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from app.db.base import Base
 from app.db.session import engine
 from app.api import users, roles, projects, tasks
+from app.api import auth
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="FSE Task Tracker")
@@ -23,6 +24,7 @@ def health():
     return {"status": "App is running..."}
 
 
+app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(roles.router)
 app.include_router(projects.router)
