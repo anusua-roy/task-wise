@@ -1,11 +1,17 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { ERR_MSG } from "../constants/App.constants";
+import React, { createContext, useContext, useState } from "react";
+import { clearSessionUser, setSessionUser } from "../utils/session";
+import { login } from "../api/auth.service";
 
-type User = { name: string; email?: string } | null;
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  role_id: string;
+};
 
 type AuthContextValue = {
-  user: User;
-  signIn: (u: User) => void;
+  user: User | null;
+  signIn: (email: string) => Promise<void>;
   signOut: () => void;
   initialized: boolean;
 };
@@ -13,35 +19,28 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User>(null);
-  const [initialized, setInitialized] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("tw_user");
-      if (raw) setUser(JSON.parse(raw));
-    } catch (e) {
-      console.warn(ERR_MSG.AUTH_FAILURE, e);
-    } finally {
-      setInitialized(true);
-    }
-  }, []);
+ async function signIn(email: string) {
+   const user = await login(email);
+   setUser(user);
+   setSessionUser(user);
+ }
 
-  function signIn(u: User) {
-    setUser(u);
-    try {
-      localStorage.setItem("tw_user", JSON.stringify(u));
-    } catch {}
-  }
-  function signOut() {
-    setUser(null);
-    try {
-      localStorage.removeItem("tw_user");
-    } catch {}
-  }
+ function signOut() {
+   setUser(null);
+   clearSessionUser();
+ }
 
   return (
-    <AuthContext.Provider value={{ user, signIn, signOut, initialized }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        signIn,
+        signOut,
+        initialized: true, // no async restore, so always ready
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -49,6 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error(ERR_MSG.AUTH_FAILURE);
+  if (!ctx) {
+    throw new Error("AuthContext not found");
+  }
   return ctx;
 }

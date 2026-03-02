@@ -2,60 +2,53 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { ROUTE_NAMES } from "../routes/constants";
-import { BUTTON_NAMES, EMPTY_STRING } from "../constants/App.constants";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  function handleSSO() {
-    const u = { name: "SSO User", email: EMPTY_STRING };
-    signIn(u);
-    navigate(ROUTE_NAMES.DASHBOARD, { replace: true });
+  async function handleLogin() {
+    if (!email.trim()) {
+      alert("Please enter your email");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await signIn(email.trim()); // will call /login internally
+      navigate(ROUTE_NAMES.DASHBOARD, { replace: true });
+    } catch (err: any) {
+      alert(err.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-bg text-fg">
       <div className="w-full max-w-md bg-card p-6 rounded-xl shadow">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 font-bold">
-            ✓
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold">Welcome</h1>
-            <p className="text-sm text-muted">
-              Sign in to access your dashboard.
-            </p>
-          </div>
-        </div>
-
-        <button
-          className="w-full py-2.5 bg-orange-600 text-white rounded-lg font-medium"
-          onClick={handleSSO}
-        >
-          {BUTTON_NAMES.SSO_LOGIN}
-        </button>
-
-        <div className="my-4 text-center text-muted text-sm">
-          or continue with email
+        <div className="mb-6">
+          <h1 className="text-lg font-semibold">Welcome</h1>
+          <p className="text-sm text-muted">
+            Enter your email to access your dashboard.
+          </p>
         </div>
 
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          className="w-full p-2.5 rounded-lg border border-border bg-bg text-fg mb-3"
+          placeholder="creator@taskwise.com"
+          className="w-full p-2.5 rounded-lg border border-border bg-bg text-fg mb-4"
         />
 
         <button
-          className="w-full py-2.5 rounded-lg border border-border bg-white"
-          onClick={() => {
-            signIn({ name: email || "Guest", email });
-            navigate(ROUTE_NAMES.DASHBOARD, { replace: true });
-          }}
+          onClick={handleLogin}
+          disabled={loading}
+          className="w-full py-2.5 bg-orange-600 text-white rounded-lg disabled:opacity-60"
         >
-          Sign in
+          {loading ? "Signing in..." : "Sign In"}
         </button>
       </div>
     </div>

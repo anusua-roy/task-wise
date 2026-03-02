@@ -1,18 +1,16 @@
 // frontend/src/pages/Projects.tsx
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
-import Header from "../components/Header";
 import ProjectCard from "../components/ProjectCard";
-import { PROJECTS } from "../data/projects";
 import { IProject } from "../types/project.type";
-import { ROUTE_NAMES } from "../routes/constants";
 import { useForm } from "react-hook-form";
 import {
   BUTTON_NAMES,
   EMPTY_STRING,
   FORM_LABEL,
 } from "../constants/App.constants";
+import { useQuery } from "@tanstack/react-query";
+import { getProjects } from "../api/projects.service";
 
 type FormValues = {
   title: string;
@@ -24,11 +22,35 @@ type FormValues = {
 
 export default function Projects() {
   const [q, setQ] = useState(EMPTY_STRING);
-  const navigate = useNavigate();
-  const [items, setItems] = useState<IProject[]>(PROJECTS);
   const [editing, setEditing] = useState<IProject | null>(null);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["projects"],
+    queryFn: getProjects,
+  });
+  // const mutation = useMutation({
+  //   mutationFn: createProject,
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({ queryKey: ["projects"] });
+  //   },
+  // });
 
   const { register, handleSubmit, reset } = useForm<FormValues>();
+  const [showForm, setShowForm] = useState(false);
+
+  const backendProjects = data ?? [];
+
+  const items: IProject[] = backendProjects.map((p) => ({
+    id: p.id,
+    title: p.name,
+    name: p.name,
+    description: p.description ?? "",
+    tags: [],
+    repoUrl: "",
+    liveUrl: "",
+    createdAt: p.created_at,
+    updatedAt: p.updated_at ?? undefined,
+    tasks: [],
+  }));
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -36,11 +58,9 @@ export default function Projects() {
     return items.filter(
       (p) =>
         p.title.toLowerCase().includes(t) ||
-        (p.description || EMPTY_STRING).toLowerCase().includes(t)
+        (p.description || "").toLowerCase().includes(t),
     );
   }, [q, items]);
-
-  const [showForm, setShowForm] = useState(false);
 
   const onCreateClick = () => {
     reset({
@@ -72,9 +92,12 @@ export default function Projects() {
       updatedAt: undefined,
     } as unknown as IProject;
 
-    setItems((s) => [newProject, ...s]);
+    // setItems((s) => [newProject, ...s]);
     setShowForm(false);
   };
+
+  if (isLoading) return <div>Loading projects...</div>;
+  if (error instanceof Error) return <div>Error: {error.message}</div>;
 
   return (
     <div>

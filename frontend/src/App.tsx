@@ -1,13 +1,11 @@
 import React, { useEffect } from "react";
 import "./styles/theme.css";
-import RouterProvider from "./RouterProvider";
+import { checkHealth } from "./api/health.service";
+import AppRoutes from "./routes";
 
 export default function App() {
   useEffect(() => {
-    fetch("http://3.107.12.140:8000/health")
-      .then((res) => res.json())
-      .then((data) => console.log("Backend:", data))
-      .catch((err) => console.error("Error:", err));
+    checkHealth()
   }, []);
-  return <RouterProvider />;
+  return <AppRoutes />;
 }

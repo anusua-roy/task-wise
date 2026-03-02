@@ -13,8 +13,17 @@ class UserCreate(UserBase):
     pass
 
 
-class UserRead(UserBase):
+class RoleRead(BaseModel):
+    name: str
+
+    model_config = {"from_attributes": True}
+
+
+class UserRead(BaseModel):
     id: str
+    email: EmailStr
+    name: str
     created_at: Optional[datetime]
+    role: RoleRead
 
     model_config = {"from_attributes": True}
