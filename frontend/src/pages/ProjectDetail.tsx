@@ -6,9 +6,13 @@ import { ROUTE_NAMES } from "../routes/constants";
 import {
   BUTTON_NAMES,
   ERR_MSG,
+  OTHERS,
   SIDEBAR_OPTIONS,
+  TASK_STATUS,
+  TASK_TABLE,
 } from "../constants/App.constants";
 import { getProjectById } from "../api/projects.service";
+import { PROJECT_DETAIL_QUERY } from "../constants/Query.constants";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +22,7 @@ export default function ProjectDetail() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["project-detail", id],
+    queryKey: [PROJECT_DETAIL_QUERY, id],
     queryFn: () => getProjectById(id!),
     enabled: !!id,
   });
@@ -28,7 +32,9 @@ export default function ProjectDetail() {
   const progress = useMemo(() => {
     const total = tasks.length;
     if (total === 0) return 0;
-    const completed = tasks.filter((t: any) => t.status === "Done").length;
+    const completed = tasks.filter(
+      (t: any) => t.status === TASK_STATUS.DONE
+    ).length;
     return Math.round((completed / total) * 100);
   }, [tasks]);
 
@@ -52,7 +58,8 @@ export default function ProjectDetail() {
           <p className="text-muted mt-2">{project.description}</p>
 
           <div className="mt-3 text-sm text-muted">
-            Progress: <span className="font-medium">{progress}%</span>
+            {`${OTHERS.PROGRESS} `}
+            <span className="font-medium">{progress}%</span>
           </div>
 
           <div className="w-48 bg-slate-100 h-2 rounded-full overflow-hidden mt-2">
@@ -74,8 +81,8 @@ export default function ProjectDetail() {
       {/* ================= TASK LIST ================= */}
       <section className="bg-card border border-border rounded-lg">
         <div className="hidden md:flex font-semibold px-4 py-3 border-b border-border text-sm">
-          <div className="flex-[3]">Title</div>
-          <div className="flex-[1]">Status</div>
+          <div className="flex-[3]">{TASK_TABLE.TITLE}</div>
+          <div className="flex-[1]">{TASK_TABLE.STATUS}</div>
         </div>
 
         {tasks.length === 0 ? (
@@ -92,13 +99,13 @@ export default function ProjectDetail() {
                 <span
                   className={
                     "px-2 py-1 text-xs rounded-md " +
-                    (t.status === "Done"
+                    (t.status === TASK_STATUS.DONE
                       ? "bg-green-100 text-green-700"
-                      : t.status === "In Progress"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : t.status === "Blocked"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-slate-100 text-slate-800")
+                      : t.status === TASK_STATUS.IN_PROGRESS
+                      ? "bg-yellow-100 text-yellow-800"
+                      : t.status === TASK_STATUS.BLOCKED
+                      ? "bg-red-100 text-red-700"
+                      : "bg-slate-100 text-slate-800")
                   }
                 >
                   {t.status}

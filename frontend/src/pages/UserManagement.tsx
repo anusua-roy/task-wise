@@ -1,85 +1,66 @@
 // frontend/src/pages/UserManagement.tsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-
-/**
- * Minimal user type for frontend-only management.
- */
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  role: "admin" | "editor" | "viewer";
-  active: boolean;
-};
-
-const INITIAL_USERS: User[] = [
-  {
-    id: "u1",
-    name: "Anusua Roy",
-    email: "anusua@example.com",
-    role: "admin",
-    active: true,
-  },
-  {
-    id: "u2",
-    name: "Rohit Das",
-    email: "rohit@example.com",
-    role: "editor",
-    active: true,
-  },
-  {
-    id: "u3",
-    name: "Leena Patel",
-    email: "leena@example.com",
-    role: "viewer",
-    active: false,
-  },
-];
+import {
+  BUTTON_NAMES,
+  ERR_MSG,
+  PAGE_LOADING,
+} from "../constants/App.constants";
+import { useQuery } from "@tanstack/react-query";
+import { getUsers } from "../api/users.service";
+import { USERS_QUERY } from "../constants/Query.constants";
+import { User, UserFormType } from "../types/user.type";
 
 export default function UserManagement() {
-  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [editing, setEditing] = useState<User | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const { register, handleSubmit, reset } = useForm<User>();
+  const { register, handleSubmit, reset } = useForm<UserFormType>();
+  const { data, isLoading, error } = useQuery({
+    queryKey: [USERS_QUERY],
+    queryFn: getUsers,
+  });
+
+  const users = data ?? [];
 
   const onCreate = () => {
-    reset({ id: "", name: "", email: "", role: "viewer", active: true });
+    reset({ id: "", name: "", email: "", role: "user" });
     setEditing(null);
     setShowForm(true);
   };
 
   const onEdit = (u: User) => {
-    reset(u);
+    reset({ ...u, role: u.role.name });
     setEditing(u);
     setShowForm(true);
   };
 
   const onDelete = (id: string) => {
     if (!confirm("Delete user?")) return;
-    setUsers((s) => s.filter((u) => u.id !== id));
+    // setUsers((s) => s.filter((u) => u.id !== id));
   };
 
-  const onSubmit = (data: Partial<User>) => {
+  const onSubmit = (data: Partial<UserFormType>) => {
     if (editing) {
-      setUsers((s) =>
-        s.map((u) =>
-          u.id === editing.id ? ({ ...editing, ...data } as User) : u
-        )
-      );
+      // setUsers((s) =>
+      //   s.map((u) =>
+      //     u.id === editing.id ? ({ ...editing, ...data } as User) : u
+      //   )
+      // );
     } else {
       const newUser: User = {
         id: `u_${Math.random().toString(36).slice(2, 8)}`,
         name: data.name || "New user",
         email: data.email || "",
-        role: (data.role as User["role"]) || "viewer",
-        active: data.active ?? true,
+        role: (data.role as unknown as User["role"]) || "user",
       };
-      setUsers((s) => [newUser, ...s]);
+      // setUsers((s) => [newUser, ...s]);
     }
     setShowForm(false);
   };
+
+  if (isLoading) return <div>{PAGE_LOADING}</div>;
+  if (error instanceof Error)
+    return <div>{`${ERR_MSG.USERS_LOADING} ${error.message}`}</div>;
 
   return (
     <section>
@@ -88,7 +69,7 @@ export default function UserManagement() {
           onClick={onCreate}
           className="px-3 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700"
         >
-          + New User
+          New User
         </button>
       </div>
 
@@ -101,7 +82,7 @@ export default function UserManagement() {
             <div>
               <div className="font-medium">{u.name}</div>
               <div className="text-xs text-[color:var(--muted)]">
-                {u.email} • {u.role}
+                {u.email} • {u.role.name}
               </div>
             </div>
 
@@ -127,64 +108,58 @@ export default function UserManagement() {
 
       {/* Modal form */}
       {showForm && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg bg-[color:var(--card-bg)] rounded-md p-6 shadow-xl">
-            <h3 className="text-lg font-semibold mb-3">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 p-4">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="bg-white p-4 rounded shadow-xl w-full max-w-lg flex flex-col gap-3"
+            role="dialog"
+            aria-modal="true"
+            aria-label={editing ? "Edit user" : "New user"}
+          >
+            <h2 className="text-xl font-semibold">
               {editing ? "Edit user" : "New user"}
-            </h3>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-              <div>
-                <label className="block text-sm">Name</label>
-                <input
-                  {...register("name")}
-                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
-                />
-              </div>
+            </h2>
 
-              <div>
-                <label className="block text-sm">Email</label>
-                <input
-                  {...register("email")}
-                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
-                />
-              </div>
+            <label className="flex flex-col gap-1 text-sm">Name</label>
+            <input
+              {...register("name")}
+              className="border border-gray-300 rounded px-2 py-2"
+            />
 
-              <div>
-                <label className="block text-sm">Role</label>
-                <select
-                  {...register("role")}
-                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
-                >
-                  <option value="admin">Admin</option>
-                  <option value="editor">Editor</option>
-                  <option value="viewer">Viewer</option>
-                </select>
-              </div>
+            <label className="flex flex-col gap-1 text-sm">Email</label>
+            <input
+              {...register("email")}
+              className="border border-gray-300 rounded px-2 py-2"
+            />
 
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" {...register("active")} />
-                  Active
-                </label>
-              </div>
+            <div>
+              <label className="flex flex-col gap-1 text-sm">Role</label>
+              <select
+                {...register("role")}
+                className="border border-gray-300 rounded px-2 py-2"
+              >
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
+              </select>
+            </div>
 
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="rounded-md px-4 py-2 text-sm border"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-md px-4 py-2 text-sm bg-[color:var(--primary)] text-white"
-                >
-                  Save
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+              >
+                {BUTTON_NAMES.SAVE}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                {BUTTON_NAMES.CANCEL}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </section>

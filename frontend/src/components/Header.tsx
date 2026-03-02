@@ -2,11 +2,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { ROUTE_META , ROUTE_NAMES} from "../routes/constants";
-import { BUTTON_NAMES, PROJECT_DESCRIPTION, PROJECT_NAME } from "../constants/App.constants";
+import { ROUTE_META, ROUTE_NAMES } from "../routes/constants";
+import { PROJECT_DESCRIPTION, PROJECT_NAME } from "../constants/App.constants";
 
 export default function Header() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -19,9 +19,7 @@ export default function Header() {
 
   // Fallbacks (REQUIRED CHANGE YOU ASKED FOR)
   const title = match ? match.title : PROJECT_NAME;
-  const description = match
-    ? match.description
-    : PROJECT_DESCRIPTION;
+  const description = match ? match.description : PROJECT_DESCRIPTION;
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -32,11 +30,6 @@ export default function Header() {
     document.addEventListener("click", onDoc);
     return () => document.removeEventListener("click", onDoc);
   }, []);
-
-  function handleSignOut() {
-    signOut();
-    navigate(ROUTE_NAMES.SIGNIN, { replace: true });
-  }
 
   // Update browser tab title
   useEffect(() => {
@@ -51,15 +44,13 @@ export default function Header() {
         {/* Dynamic Title + Description */}
         <div>
           <h1 className="text-lg font-semibold">{title}</h1>
-          <p className="text-sm text-[color:var(--muted)]">
-            {description}
-          </p>
+          <p className="text-sm text-[color:var(--muted)]">{description}</p>
         </div>
 
         {/* Avatar + Menu */}
         <div className="relative" ref={ref}>
           <button
-            onClick={() => setOpen((s) => !s)}
+            onClick={() => navigate(ROUTE_NAMES.PROFILE)}
             aria-haspopup="true"
             aria-expanded={open}
             className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-sm"
@@ -67,35 +58,6 @@ export default function Header() {
           >
             {user?.name ? user.name[0].toUpperCase() : "U"}
           </button>
-
-          {open && (
-            <div
-              role="menu"
-              className="absolute right-0 mt-2 w-40 rounded-md border bg-[color:var(--card-bg)] shadow-lg z-50"
-            >
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  navigate(ROUTE_NAMES.PROFILE);
-                }}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
-                role="menuitem"
-              >
-                {BUTTON_NAMES.PROFILE}
-              </button>
-
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  handleSignOut();
-                }}
-                className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-slate-50"
-                role="menuitem"
-              >
-                {BUTTON_NAMES.LOGOUT}
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </header>
