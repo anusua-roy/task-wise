@@ -70,11 +70,13 @@ def run():
     db.commit()
     db.refresh(p1)
 
-    db.add_all([
-        ProjectMember(project_id=p1.id, user_id=bob.id, role="Owner"),
-        ProjectMember(project_id=p1.id, user_id=charlie.id, role="Member"),
-        ProjectMember(project_id=p1.id, user_id=diana.id, role="Member"),
-    ])
+    db.add_all(
+        [
+            ProjectMember(project_id=p1.id, user_id=bob.id, role="Owner"),
+            ProjectMember(project_id=p1.id, user_id=charlie.id, role="Member"),
+            ProjectMember(project_id=p1.id, user_id=diana.id, role="Member"),
+        ]
+    )
     db.commit()
 
     t1 = Task(
@@ -102,10 +104,12 @@ def run():
     db.commit()
     db.refresh(t2)
 
-    db.add_all([
-        TaskAssignee(task_id=t2.id, user_id=charlie.id),
-        TaskAssignee(task_id=t2.id, user_id=diana.id),
-    ])
+    db.add_all(
+        [
+            TaskAssignee(task_id=t2.id, user_id=charlie.id),
+            TaskAssignee(task_id=t2.id, user_id=diana.id),
+        ]
+    )
     db.commit()
 
     t3 = Task(
@@ -134,10 +138,12 @@ def run():
     db.commit()
     db.refresh(p2)
 
-    db.add_all([
-        ProjectMember(project_id=p2.id, user_id=charlie.id, role="Owner"),
-        ProjectMember(project_id=p2.id, user_id=bob.id, role="Member"),
-    ])
+    db.add_all(
+        [
+            ProjectMember(project_id=p2.id, user_id=charlie.id, role="Owner"),
+            ProjectMember(project_id=p2.id, user_id=bob.id, role="Member"),
+        ]
+    )
     db.commit()
 
     t4 = Task(
@@ -180,9 +186,7 @@ def run():
     db.commit()
     db.refresh(p3)
 
-    db.add(
-        ProjectMember(project_id=p3.id, user_id=diana.id, role="Owner")
-    )
+    db.add(ProjectMember(project_id=p3.id, user_id=diana.id, role="Owner"))
     db.commit()
 
     t6 = Task(

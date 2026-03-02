@@ -109,26 +109,16 @@ def get_project_detail(
 
     # Fetch members
     members = (
-        db.query(ProjectMember)
-        .filter(ProjectMember.project_id == project_id)
-        .all()
+        db.query(ProjectMember).filter(ProjectMember.project_id == project_id).all()
     )
 
     # Fetch tasks
-    tasks = (
-        db.query(Task)
-        .filter(Task.project_id == project_id)
-        .all()
-    )
+    tasks = db.query(Task).filter(Task.project_id == project_id).all()
 
     # Format assignees
     formatted_tasks = []
     for task in tasks:
-        assignees = (
-            db.query(TaskAssignee)
-            .filter(TaskAssignee.task_id == task.id)
-            .all()
-        )
+        assignees = db.query(TaskAssignee).filter(TaskAssignee.task_id == task.id).all()
 
         formatted_tasks.append(
             {
