@@ -13,6 +13,7 @@ import {
 } from "../constants/App.constants";
 import { getProjectById } from "../api/projects.service";
 import { PROJECT_DETAIL_QUERY } from "../constants/Query.constants";
+import TaskGrid from "../components/TaskGrid";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -88,31 +89,7 @@ export default function ProjectDetail() {
         {tasks.length === 0 ? (
           <div className="p-4 text-muted">{ERR_MSG.NO_TASKS}</div>
         ) : (
-          tasks.map((t: any) => (
-            <div
-              key={t.id}
-              className="px-4 py-3 border-b border-border hover:bg-slate-50 transition"
-            >
-              <div className="flex justify-between items-center">
-                <div className="font-medium text-sm">{t.title}</div>
-
-                <span
-                  className={
-                    "px-2 py-1 text-xs rounded-md " +
-                    (t.status === TASK_STATUS.DONE
-                      ? "bg-green-100 text-green-700"
-                      : t.status === TASK_STATUS.IN_PROGRESS
-                      ? "bg-yellow-100 text-yellow-800"
-                      : t.status === TASK_STATUS.BLOCKED
-                      ? "bg-red-100 text-red-700"
-                      : "bg-slate-100 text-slate-800")
-                  }
-                >
-                  {t.status}
-                </span>
-              </div>
-            </div>
-          ))
+          <TaskGrid tasks={tasks} />
         )}
       </section>
     </div>

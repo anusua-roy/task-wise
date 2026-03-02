@@ -1,12 +1,18 @@
 import React from "react";
 import { TaskStatus } from "../types/task.type";
-import { BUTTON_NAMES, EMPTY_STRING, OTHERS, PLACEHOLDERS, TASK_STATUS } from "../constants/App.constants";
+import {
+  BUTTON_NAMES,
+  EMPTY_STRING,
+  OTHERS,
+  PLACEHOLDERS,
+  TASK_STATUS,
+} from "../constants/App.constants";
 
 interface Props {
   query: string;
   setQuery: (q: string) => void;
-  status: TaskStatus | "all";
-  setStatus: (s: TaskStatus | "all") => void;
+  status: string;
+  setStatus: (s: string) => void;
   tagOptions: string[];
   selectedTag?: string;
   setSelectedTag: (t?: string) => void;
@@ -52,17 +58,17 @@ export default function TaskFilters({
         aria-label="Filter by status"
         className="px-2 py-2 border border-black/10 rounded-md"
       >
-        <option value={TASK_STATUS.ALL_VALUE}>{TASK_STATUS.ALL}</option>
-        <option value={TASK_STATUS.TODO_VALUE}>{TASK_STATUS.TODO}</option>
-        <option value={TASK_STATUS.IN_PROGRESS_VALUE}>
+        <option value={TASK_STATUS.ALL}>{TASK_STATUS.ALL}</option>
+        <option value={TASK_STATUS.NEW}>{TASK_STATUS.NEW}</option>
+        <option value={TASK_STATUS.IN_PROGRESS}>
           {TASK_STATUS.IN_PROGRESS}
         </option>
-        <option value={TASK_STATUS.BLOCKED_VALUE}>{TASK_STATUS.BLOCKED}</option>
-        <option value={TASK_STATUS.DONE_VALUE}>{TASK_STATUS.DONE}</option>
+        <option value={TASK_STATUS.BLOCKED}>{TASK_STATUS.BLOCKED}</option>
+        <option value={TASK_STATUS.DONE}>{TASK_STATUS.DONE}</option>
       </select>
 
       {/* Tag Filter */}
-      <select
+      {/* <select
         value={selectedTag || EMPTY_STRING}
         onChange={(e) => setSelectedTag(e.target.value || undefined)}
         aria-label="Filter by tag"
@@ -74,7 +80,7 @@ export default function TaskFilters({
             {t}
           </option>
         ))}
-      </select>
+      </select> */}
 
       {/* Clear Button */}
       <button

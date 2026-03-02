@@ -86,13 +86,8 @@ export const TASK_STATUS = {
   DONE: "Done",
   IN_PROGRESS: "In Progress",
   BLOCKED: "Blocked",
-  TODO: "To Do",
+  NEW: "New",
   ALL: "All",
-  DONE_VALUE: "done",
-  IN_PROGRESS_VALUE: "in-progress",
-  BLOCKED_VALUE: "blocked",
-  TODO_VALUE: "todo",
-  ALL_VALUE: "all",
 };
 
 export const OTHERS = {

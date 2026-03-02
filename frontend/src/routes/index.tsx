@@ -64,8 +64,10 @@ export default function AppRoutes() {
         <Route path={ROUTE_NAMES.PROJECTS} element={<Projects />} />
         <Route path={ROUTE_NAMES.PROJECT(":id")} element={<ProjectDetail />} />
         <Route path={ROUTE_NAMES.TASKS} element={<MyTasksPage />} />
-        <Route path={ROUTE_NAMES.USERS} element={<UserManagement />} />
-        <Route path={ROUTE_NAMES.SETTINGS} element={<Settings />} />
+        {user?.role.name === "Admin" && (
+          <Route path={ROUTE_NAMES.USERS} element={<UserManagement />} />
+        )}
+        {/* <Route path={ROUTE_NAMES.SETTINGS} element={<Settings />} /> */}
         <Route path={ROUTE_NAMES.PROFILE} element={<Profile />} />
       </Route>
 

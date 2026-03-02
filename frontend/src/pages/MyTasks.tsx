@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Task } from "../types/task.type";
 import * as tasksApi from "../api/tasks.service";
-import TaskCard from "../components/TaskCard";
 import TaskFilters from "../components/TaskFilters";
 import {
   BUTTON_NAMES,
@@ -16,6 +15,7 @@ import {
   TASK_TABLE,
 } from "../constants/App.constants";
 import toast from "react-hot-toast";
+import TaskGrid from "../components/TaskGrid";
 
 type FormValues = {
   title: string;
@@ -30,9 +30,7 @@ export default function MyTasksPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState(EMPTY_STRING);
-  const [statusFilter, setStatusFilter] = useState<"all" | Task["status"]>(
-    "all"
-  );
+  const [statusFilter, setStatusFilter] = useState<string>("All");
   const [tagFilter, setTagFilter] = useState<string | undefined>(undefined);
   const [editing, setEditing] = useState<Task | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -61,7 +59,8 @@ export default function MyTasksPage() {
 
   const filtered = useMemo(() => {
     return tasks.filter((t) => {
-      if (statusFilter !== "all" && t.status !== statusFilter) return false;
+      if (statusFilter !== TASK_STATUS.ALL && t.status !== statusFilter)
+        return false;
       if (tagFilter && !(t.tags || []).includes(tagFilter)) return false;
       if (query.trim()) {
         const q = query.toLowerCase();
@@ -75,7 +74,7 @@ export default function MyTasksPage() {
 
   const onClear = () => {
     setQuery(EMPTY_STRING);
-    setStatusFilter("all");
+    setStatusFilter(TASK_STATUS.ALL);
     setTagFilter(undefined);
   };
 
@@ -83,43 +82,12 @@ export default function MyTasksPage() {
     reset({
       title: EMPTY_STRING,
       description: EMPTY_STRING,
-      status: "todo",
+      status: TASK_STATUS.NEW as Task["status"],
       tags: EMPTY_STRING,
       dueDate: EMPTY_STRING,
     });
     setEditing(null);
     setShowForm(true);
-  };
-
-  const onEdit = (task: Task) => {
-    setEditing(task);
-    reset({
-      title: task.title,
-      description: task.description || EMPTY_STRING,
-      status: task.status,
-      tags: (task.tags || []).join(", "),
-      dueDate: task.dueDate ? task.dueDate.split("T")[0] : EMPTY_STRING,
-    });
-    setShowForm(true);
-  };
-
-  const onDelete = async (id: string) => {
-    if (!confirm(OTHERS.DELETE_TASK)) return;
-    try {
-      // await tasksApi.deleteTask(id);
-      setTasks((s) => s.filter((t) => t.id !== id));
-    } catch {
-      toast.error(ERR_MSG.DELETE_FAIL);
-    }
-  };
-
-  const onStatusChange = async (id: string, status: Task["status"]) => {
-    try {
-      // const updated = await tasksApi.updateTask(id, { status });
-      // setTasks((s) => s.map((t) => (t.id === id ? updated : t)));
-    } catch {
-      toast.error(ERR_MSG.UPDATE_FAIL);
-    }
   };
 
   const onSubmit = async (data: FormValues) => {
@@ -194,19 +162,8 @@ export default function MyTasksPage() {
       )}
 
       {/* Task Grid */}
-      <section
-        className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4"
-        aria-live="polite"
-      >
-        {filtered.map((t) => (
-          <TaskCard
-            key={t.id}
-            task={t}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onStatusChange={onStatusChange}
-          />
-        ))}
+      <section className="w-full">
+        <TaskGrid tasks={filtered} />
       </section>
 
       {/* Modal */}
@@ -247,18 +204,14 @@ export default function MyTasksPage() {
                 {...register("status")}
                 className="border border-gray-300 rounded px-2 py-2"
               >
-                <option value={TASK_STATUS.TODO_VALUE}>
-                  {TASK_STATUS.TODO}
-                </option>
-                <option value={TASK_STATUS.IN_PROGRESS_VALUE}>
+                <option value={TASK_STATUS.NEW}>{TASK_STATUS.NEW}</option>
+                <option value={TASK_STATUS.IN_PROGRESS}>
                   {TASK_STATUS.IN_PROGRESS}
                 </option>
-                <option value={TASK_STATUS.BLOCKED_VALUE}>
+                <option value={TASK_STATUS.BLOCKED}>
                   {TASK_STATUS.BLOCKED}
                 </option>
-                <option value={TASK_STATUS.DONE_VALUE}>
-                  {TASK_STATUS.DONE}
-                </option>
+                <option value={TASK_STATUS.DONE}>{TASK_STATUS.DONE}</option>
               </select>
             </label>
 

@@ -9,7 +9,9 @@ export default function Layout() {
       <Sidebar />
       <main className="flex-1 p-4 md:p-6">
         <Header />
-        <Outlet />
+        <div className="px-2">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

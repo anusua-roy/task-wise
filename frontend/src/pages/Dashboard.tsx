@@ -8,13 +8,14 @@ import {
   EMPTY_STRING,
   ERR_MSG,
   PAGE_LOADING,
+  TASK_STATUS,
   TASK_TABLE,
   TITLES,
 } from "../constants/App.constants";
 import { MY_TASKS_QUERY, PROJECTS_QUERY } from "../constants/Query.constants";
+import TaskGrid from "../components/TaskGrid";
 
 export default function Dashboard() {
-  const { user } = useAuth();
 
   const {
     data: projects,
@@ -71,21 +72,7 @@ export default function Dashboard() {
         {(tasks ?? []).length === 0 ? (
           <p style={{ marginTop: 12 }}>{ERR_MSG.NO_TASKS}</p>
         ) : (
-          <div className="table" style={{ marginTop: 12 }}>
-            <div className="row" style={{ fontWeight: 600 }}>
-              <div style={{ flex: 2 }}>{TASK_TABLE.TITLE}</div>
-              <div style={{ flex: 2 }}>{TASK_TABLE.DESCRIPTION}</div>
-              <div style={{ flex: 1 }}>{TASK_TABLE.STATUS}</div>
-            </div>
-
-            {(tasks ?? []).map((task: any) => (
-              <div className="row" key={task.id}>
-                <div style={{ flex: 2 }}>{task.title}</div>
-                <div style={{ flex: 1 }}>{task.description}</div>
-                <div style={{ flex: 1 }}>{task.status}</div>
-              </div>
-            ))}
-          </div>
+          <TaskGrid tasks={tasks ?? []} />
         )}
       </section>
     </div>
