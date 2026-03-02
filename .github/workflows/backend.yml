@@ -106,6 +106,6 @@ jobs:
               736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:${{ github.sha }}
 
             echo "Running seed script..."
-            docker exec taskwise python -m app.seed
+            docker exec -e RESET_DB=true taskwise python -m app.seed
 
             echo "Deployment completed successfully."
