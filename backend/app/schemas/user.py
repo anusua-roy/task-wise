@@ -13,11 +13,6 @@ class UserCreate(UserBase):
     pass
 
 
-from pydantic import BaseModel, EmailStr
-from typing import Optional
-from datetime import datetime
-
-
 class RoleRead(BaseModel):
     name: str
 
