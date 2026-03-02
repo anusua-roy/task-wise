@@ -105,4 +105,7 @@ jobs:
               -e DATABASE_URL=sqlite:///./data/taskwise.db \
               736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:${{ github.sha }}
 
+            echo "Running seed script..."
+            docker exec taskwise python -m app.seed
+
             echo "Deployment completed successfully."
