@@ -7,24 +7,26 @@ import { useForm } from "react-hook-form";
 import {
   BUTTON_NAMES,
   EMPTY_STRING,
+  ERR_MSG,
   FORM_LABEL,
+  PAGE_LOADING,
+  PLACEHOLDERS,
 } from "../constants/App.constants";
 import { useQuery } from "@tanstack/react-query";
 import { getProjects } from "../api/projects.service";
+import { PROJECTS_QUERY } from "../constants/Query.constants";
 
 type FormValues = {
   title: string;
   description?: string;
-  tags?: string; // comma separated
-  repoUrl?: string;
-  liveUrl?: string;
+  tags?: string;
 };
 
 export default function Projects() {
   const [q, setQ] = useState(EMPTY_STRING);
   const [editing, setEditing] = useState<IProject | null>(null);
   const { data, isLoading, error } = useQuery({
-    queryKey: ["projects"],
+    queryKey: [PROJECTS_QUERY],
     queryFn: getProjects,
   });
   // const mutation = useMutation({
@@ -41,12 +43,10 @@ export default function Projects() {
 
   const items: IProject[] = backendProjects.map((p) => ({
     id: p.id,
-    title: p.name,
+    title: p.name ?? EMPTY_STRING,
     name: p.name,
-    description: p.description ?? "",
+    description: p.description ?? EMPTY_STRING,
     tags: [],
-    repoUrl: "",
-    liveUrl: "",
     createdAt: p.created_at,
     updatedAt: p.updated_at ?? undefined,
     tasks: [],
@@ -58,7 +58,7 @@ export default function Projects() {
     return items.filter(
       (p) =>
         p.title.toLowerCase().includes(t) ||
-        (p.description || "").toLowerCase().includes(t),
+        (p.description || EMPTY_STRING).toLowerCase().includes(t)
     );
   }, [q, items]);
 
@@ -67,8 +67,6 @@ export default function Projects() {
       title: EMPTY_STRING,
       description: EMPTY_STRING,
       tags: EMPTY_STRING,
-      repoUrl: EMPTY_STRING,
-      liveUrl: EMPTY_STRING,
     });
     setShowForm(true);
   };
@@ -85,8 +83,6 @@ export default function Projects() {
             .map((t) => t.trim())
             .filter(Boolean)
         : [],
-      repoUrl: data.repoUrl || EMPTY_STRING,
-      liveUrl: data.liveUrl || EMPTY_STRING,
       // fill optional fields conservatively
       createdAt: new Date().toISOString(),
       updatedAt: undefined,
@@ -96,8 +92,9 @@ export default function Projects() {
     setShowForm(false);
   };
 
-  if (isLoading) return <div>Loading projects...</div>;
-  if (error instanceof Error) return <div>Error: {error.message}</div>;
+  if (isLoading) return <div>{PAGE_LOADING}</div>;
+  if (error instanceof Error)
+    return <div>{`${ERR_MSG.PROJECTS_LOADING} ${error.message}`}</div>;
 
   return (
     <div>
@@ -105,7 +102,7 @@ export default function Projects() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search projects"
+          placeholder={PLACEHOLDERS.SEARCH_PROJECT}
           className="w-full sm:w-64 p-2.5 rounded-lg border border-border bg-[color:var(--card-bg)] text-sm"
         />
         <button
@@ -163,22 +160,6 @@ export default function Projects() {
                   className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm">{FORM_LABEL.REPO_URL}</label>
-                <input
-                  {...register("repoUrl")}
-                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm">{FORM_LABEL.LIVE_URL}</label>
-              <input
-                {...register("liveUrl")}
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
-              />
             </div>
 
             <div className="flex justify-end gap-2 mt-2">

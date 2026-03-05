@@ -1,5 +1,5 @@
 // src/types/task.ts
-export type TaskStatus = 'todo' | 'in-progress' | 'blocked' | 'done';
+export type TaskStatus = "New" | "In Progress" | "Blocked" | "Done";
 
 export interface Task {
   id: string;

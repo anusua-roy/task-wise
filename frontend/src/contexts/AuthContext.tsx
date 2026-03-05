@@ -1,13 +1,11 @@
 import React, { createContext, useContext, useState } from "react";
-import { clearSessionUser, setSessionUser } from "../utils/session";
+import {
+  clearSessionUser,
+  setSessionUser,
+  getSessionUser,
+} from "../utils/session";
 import { login } from "../api/auth.service";
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  role_id: string;
-};
+import { User } from "../types/user.type";
 
 type AuthContextValue = {
   user: User | null;
@@ -19,28 +17,27 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(getSessionUser());
+  const [initialized, setInitialized] = useState(false);
 
- async function signIn(email: string) {
-   const user = await login(email);
-   setUser(user);
-   setSessionUser(user);
- }
+  // optional: run once to mark initialized
+  React.useEffect(() => {
+    setInitialized(true);
+  }, []);
 
- function signOut() {
-   setUser(null);
-   clearSessionUser();
- }
+  async function signIn(email: string) {
+    const user = await login(email.toLowerCase());
+    setUser(user);
+    setSessionUser(user, 1000 * 60 * 60); // 1 hour TTL
+  }
+
+  function signOut() {
+    setUser(null);
+    clearSessionUser();
+  }
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        signIn,
-        signOut,
-        initialized: true, // no async restore, so always ready
-      }}
-    >
+    <AuthContext.Provider value={{ user, signIn, signOut, initialized }}>
       {children}
     </AuthContext.Provider>
   );

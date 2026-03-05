@@ -4,16 +4,25 @@ import ProjectCard from "../components/ProjectCard";
 import { getProjects } from "../api/projects.service";
 import { getMyTasks } from "../api/tasks.service";
 import { useAuth } from "../contexts/AuthContext";
+import {
+  EMPTY_STRING,
+  ERR_MSG,
+  PAGE_LOADING,
+  TASK_STATUS,
+  TASK_TABLE,
+  TITLES,
+} from "../constants/App.constants";
+import { MY_TASKS_QUERY, PROJECTS_QUERY } from "../constants/Query.constants";
+import TaskGrid from "../components/TaskGrid";
 
 export default function Dashboard() {
-  const { user } = useAuth();
 
   const {
     data: projects,
     isLoading: projectsLoading,
     error: projectsError,
   } = useQuery({
-    queryKey: ["projects"],
+    queryKey: [PROJECTS_QUERY],
     queryFn: getProjects,
   });
 
@@ -22,17 +31,17 @@ export default function Dashboard() {
     isLoading: tasksLoading,
     error: tasksError,
   } = useQuery({
-    queryKey: ["my-tasks"],
+    queryKey: [MY_TASKS_QUERY],
     queryFn: getMyTasks,
   });
 
-  if (projectsLoading || tasksLoading) return <div>Loading dashboard...</div>;
+  if (projectsLoading || tasksLoading) return <div>{PAGE_LOADING}</div>;
 
   if (projectsError instanceof Error)
-    return <div>Error loading projects: {projectsError.message}</div>;
+    return <div>{`${ERR_MSG.PROJECTS_LOADING} ${projectsError.message}`}</div>;
 
   if (tasksError instanceof Error)
-    return <div>Error loading tasks: {tasksError.message}</div>;
+    return <div>{`${ERR_MSG.TASKS_LOADING} ${tasksError.message}`}</div>;
 
   return (
     <div>
@@ -46,7 +55,7 @@ export default function Dashboard() {
             project={{
               id: proj.id,
               title: proj.name,
-              description: proj.description ?? "",
+              description: proj.description ?? EMPTY_STRING,
               tags: [],
               created_at: proj.created_at,
             }}
@@ -58,26 +67,12 @@ export default function Dashboard() {
       {/* My Tasks */}
       {/* ========================= */}
       <section style={{ marginTop: 32 }}>
-        <h2>My Tasks</h2>
+        <h2>{TITLES.MY_TASKS}</h2>
 
         {(tasks ?? []).length === 0 ? (
-          <p style={{ marginTop: 12 }}>No tasks assigned to you.</p>
+          <p style={{ marginTop: 12 }}>{ERR_MSG.NO_TASKS}</p>
         ) : (
-          <div className="table" style={{ marginTop: 12 }}>
-            <div className="row" style={{ fontWeight: 600 }}>
-              <div style={{ flex: 2 }}>Title</div>
-              <div style={{ flex: 2 }}>Description</div>
-              <div style={{ flex: 1 }}>Status</div>
-            </div>
-
-            {(tasks ?? []).map((task: any) => (
-              <div className="row" key={task.id}>
-                <div style={{ flex: 2 }}>{task.title}</div>
-                <div style={{ flex: 1 }}>{task.description}</div>
-                <div style={{ flex: 1 }}>{task.status}</div>
-              </div>
-            ))}
-          </div>
+          <TaskGrid tasks={tasks ?? []} />
         )}
       </section>
     </div>
