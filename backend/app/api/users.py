@@ -1,21 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.db.session import SessionLocal
 from app.models.user import User
 from app.models.role import Role
 from app.schemas.user import UserCreate, UserRead, UserBase
 from app.core.security import require_role
+from app.api.deps import get_db
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
-
-
-# Dependency to get DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 # ----------------------

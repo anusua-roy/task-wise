@@ -1,18 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.db.session import SessionLocal
 from app.models.role import Role
 from app.core.security import require_role
+from app.api.deps import get_db
 
 router = APIRouter(prefix="/api/roles", tags=["Roles"])
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.get("/")

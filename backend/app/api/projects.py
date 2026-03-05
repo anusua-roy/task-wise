@@ -1,21 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app.db.session import SessionLocal
+from sqlalchemy.orm import Session, joinedload
 from app.models.project import Project
 from app.models.project_member import ProjectMember
-from app.models.task import Task
+from app.models.task import Task, TaskAssignee
 from app.models.user import User
 from app.core.security import get_current_user
+from app.api.deps import get_db
 
 router = APIRouter(prefix="/api/projects", tags=["Projects"])
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 # ==========================================================
@@ -51,34 +43,30 @@ def create_project(
 
 
 # ==========================================================
-# LIST PROJECTS (Dashboard)
+# LIST PROJECTS
+# Anyone logged in can view all projects
 # ==========================================================
 @router.get("/")
 def list_projects(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role.name == "Admin":
-        projects = db.query(Project).all()
-    else:
-        projects = (
-            db.query(Project)
-            .join(ProjectMember)
-            .filter(ProjectMember.user_id == current_user.id)
-            .all()
-        )
+    projects = db.query(Project).all()
 
     project_list = []
+
     for p in projects:
-        # Fetch creator
+
         creator = db.query(User).filter(User.id == p.created_by_id).first()
 
-        # Fetch members
         members = db.query(ProjectMember).filter(ProjectMember.project_id == p.id).all()
 
         formatted_members = []
+
         for m in members:
+
             user = db.query(User).filter(User.id == m.user_id).first()
+
             if user:
                 formatted_members.append(
                     {
@@ -114,7 +102,8 @@ def list_projects(
 
 
 # ==========================================================
-# PROJECT DETAIL (with tasks only, assignee as user object)
+# PROJECT DETAIL
+# Anyone logged in can view
 # ==========================================================
 @router.get("/{project_id}")
 def get_project_detail(
@@ -122,33 +111,40 @@ def get_project_detail(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    project = db.query(Project).filter(Project.id == project_id).first()
+
+    project = (
+        db.query(Project)
+        .options(joinedload(Project.tasks))
+        .filter(Project.id == project_id)
+        .first()
+    )
+
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # Authorization
-    if current_user.role.name != "Admin":
-        membership = (
-            db.query(ProjectMember)
-            .filter(
-                ProjectMember.project_id == project_id,
-                ProjectMember.user_id == current_user.id,
-            )
-            .first()
-        )
-        if not membership:
-            raise HTTPException(status_code=403, detail="Access denied")
+    tasks = (
+        db.query(Task)
+        .options(joinedload(Task.assignees).joinedload(TaskAssignee.user))
+        .filter(Task.project_id == project_id)
+        .all()
+    )
 
-    # Fetch tasks
-    tasks = db.query(Task).filter(Task.project_id == project_id).all()
     formatted_tasks = []
+
     for task in tasks:
-        creator_user = db.query(User).filter(User.id == task.created_by_id).first()
-        assignee_user = (
-            db.query(User).filter(User.id == task.assignee_id).first()
-            if task.assignee_id
-            else None
-        )
+
+        creator = db.query(User).filter(User.id == task.created_by_id).first()
+
+        assignees = [
+            {
+                "id": a.user.id,
+                "name": a.user.name,
+                "email": a.user.email,
+                "role_id": a.user.role_id,
+            }
+            for a in task.assignees
+            if a.user
+        ]
 
         formatted_tasks.append(
             {
@@ -158,24 +154,15 @@ def get_project_detail(
                 "status": task.status,
                 "created_by": (
                     {
-                        "id": creator_user.id,
-                        "name": creator_user.name,
-                        "email": creator_user.email,
-                        "role_id": creator_user.role_id,
+                        "id": creator.id,
+                        "name": creator.name,
+                        "email": creator.email,
+                        "role_id": creator.role_id,
                     }
-                    if creator_user
+                    if creator
                     else None
                 ),
-                "assignee": (
-                    {
-                        "id": assignee_user.id,
-                        "name": assignee_user.name,
-                        "email": assignee_user.email,
-                        "role_id": assignee_user.role_id,
-                    }
-                    if assignee_user
-                    else None
-                ),
+                "assignees": assignees,
             }
         )
 
