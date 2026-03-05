@@ -24,7 +24,6 @@ def run():
     # -----------------------
     admin_role = Role(name="Admin", description="System administrator")
     user_role = Role(name="User", description="Regular user")
-
     db.add_all([admin_role, user_role])
     db.commit()
 
@@ -32,29 +31,13 @@ def run():
     # USERS
     # -----------------------
     alice = User(
-        email="alice@taskwise.com",
-        name="Alice Johnson",
-        role_id=admin_role.id,
+        email="alice@taskwise.com", name="Alice Johnson", role_id=admin_role.id
     )
-
-    bob = User(
-        email="bob@taskwise.com",
-        name="Bob Smith",
-        role_id=user_role.id,
-    )
-
+    bob = User(email="bob@taskwise.com", name="Bob Smith", role_id=user_role.id)
     charlie = User(
-        email="charlie@taskwise.com",
-        name="Charlie Brown",
-        role_id=user_role.id,
+        email="charlie@taskwise.com", name="Charlie Brown", role_id=user_role.id
     )
-
-    diana = User(
-        email="diana@taskwise.com",
-        name="Diana Prince",
-        role_id=user_role.id,
-    )
-
+    diana = User(email="diana@taskwise.com", name="Diana Prince", role_id=user_role.id)
     db.add_all([alice, bob, charlie, diana])
     db.commit()
 
@@ -79,17 +62,17 @@ def run():
     )
     db.commit()
 
+    # Tasks for Project 1 (single assignee per task)
     t1 = Task(
         title="Design landing page",
         description="Create wireframes",
         status=TaskStatus.NEW.value,
         project_id=p1.id,
         created_by_id=bob.id,
+        assignee_id=charlie.id,
     )
     db.add(t1)
     db.commit()
-    db.refresh(t1)
-
     db.add(TaskAssignee(task_id=t1.id, user_id=charlie.id))
     db.commit()
 
@@ -99,17 +82,11 @@ def run():
         status=TaskStatus.IN_PROGRESS.value,
         project_id=p1.id,
         created_by_id=bob.id,
+        assignee_id=charlie.id,  # only one assignee
     )
     db.add(t2)
     db.commit()
-    db.refresh(t2)
-
-    db.add_all(
-        [
-            TaskAssignee(task_id=t2.id, user_id=charlie.id),
-            TaskAssignee(task_id=t2.id, user_id=diana.id),
-        ]
-    )
+    db.add(TaskAssignee(task_id=t2.id, user_id=charlie.id))
     db.commit()
 
     t3 = Task(
@@ -118,11 +95,10 @@ def run():
         status=TaskStatus.BLOCKED.value,
         project_id=p1.id,
         created_by_id=bob.id,
+        assignee_id=bob.id,
     )
     db.add(t3)
     db.commit()
-    db.refresh(t3)
-
     db.add(TaskAssignee(task_id=t3.id, user_id=bob.id))
     db.commit()
 
@@ -152,11 +128,10 @@ def run():
         status=TaskStatus.NEW.value,
         project_id=p2.id,
         created_by_id=charlie.id,
+        assignee_id=bob.id,
     )
     db.add(t4)
     db.commit()
-    db.refresh(t4)
-
     db.add(TaskAssignee(task_id=t4.id, user_id=bob.id))
     db.commit()
 
@@ -166,11 +141,10 @@ def run():
         status=TaskStatus.DONE.value,
         project_id=p2.id,
         created_by_id=charlie.id,
+        assignee_id=charlie.id,
     )
     db.add(t5)
     db.commit()
-    db.refresh(t5)
-
     db.add(TaskAssignee(task_id=t5.id, user_id=charlie.id))
     db.commit()
 
@@ -195,11 +169,10 @@ def run():
         status=TaskStatus.IN_PROGRESS.value,
         project_id=p3.id,
         created_by_id=diana.id,
+        assignee_id=diana.id,
     )
     db.add(t6)
     db.commit()
-    db.refresh(t6)
-
     db.add(TaskAssignee(task_id=t6.id, user_id=diana.id))
     db.commit()
 
