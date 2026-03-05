@@ -72,7 +72,7 @@ export default function Dashboard() {
         {(tasks ?? []).length === 0 ? (
           <p style={{ marginTop: 12 }}>{ERR_MSG.NO_TASKS}</p>
         ) : (
-          <TaskGrid tasks={tasks ?? []} />
+          <TaskGrid filteredTasks={tasks ?? []} showAssignee={false} />
         )}
       </section>
     </div>

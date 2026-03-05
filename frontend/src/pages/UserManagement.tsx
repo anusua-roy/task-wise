@@ -23,7 +23,7 @@ export default function UserManagement() {
   const users = data ?? [];
 
   const onCreate = () => {
-    reset({ id: "", name: "", email: "", role: "user" });
+    reset({ id: "", name: "", email: "", role: "User" });
     setEditing(null);
     setShowForm(true);
   };

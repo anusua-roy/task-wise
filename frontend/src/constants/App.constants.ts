@@ -66,6 +66,8 @@ export const FORM_LABEL = {
   TAGS: "Tags (comma separated)",
   STATUS: "Status",
   DUE_DATE: "Due date",
+  CREATED_ON: "Created On",
+  CREATED_BY: "Created By",
 };
 
 export const TITLES = { MY_TASKS: "My Tasks" };
@@ -80,6 +82,7 @@ export const TASK_TABLE = {
   TITLE: "Title",
   DESCRIPTION: "Description",
   STATUS: "Status",
+  ACTION: "Action",
 };
 
 export const TASK_STATUS = {

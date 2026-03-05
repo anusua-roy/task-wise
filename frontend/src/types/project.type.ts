@@ -1,4 +1,5 @@
 import { Task } from "./task.type";
+import { User } from "./user.type";
 export interface IProject {
   id: string;
   title: string;
@@ -9,4 +10,6 @@ export interface IProject {
   tasks?: Task[];
   created_at?: string;
   updated_at?: string;
+  created_by?: User;
+  members?: User[];
 }

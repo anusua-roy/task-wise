@@ -7,7 +7,7 @@ export interface Task {
   description?: string;
   status: TaskStatus;
   tags?: string[];
-  assignee?: { id: string; name: string } | null;
+  assignees?: [{ id: string; name: string; email: string }] | null;
   dueDate?: string | null; // ISO string
   createdAt: string; // ISO
   updatedAt?: string; // ISO

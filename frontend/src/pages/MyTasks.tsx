@@ -140,12 +140,12 @@ export default function MyTasksPage() {
           setSelectedTag={setTagFilter}
           onClear={onClear}
         />
-        <button
+        {/* <button
           onClick={onCreateClick}
           className="px-3 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700"
         >
           {BUTTON_NAMES.ADD_TASK}
-        </button>
+        </button> */}
       </div>
 
       {loading && <p>{PAGE_LOADING}</p>}
@@ -163,7 +163,7 @@ export default function MyTasksPage() {
 
       {/* Task Grid */}
       <section className="w-full">
-        <TaskGrid tasks={filtered} />
+        <TaskGrid filteredTasks={filtered} showAssignee={false} />
       </section>
 
       {/* Modal */}

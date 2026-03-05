@@ -47,8 +47,10 @@ export default function Projects() {
     name: p.name,
     description: p.description ?? EMPTY_STRING,
     tags: [],
-    createdAt: p.created_at,
-    updatedAt: p.updated_at ?? undefined,
+    created_at: p.created_at,
+    created_by: p.created_by,
+    updated_at: p.updated_at ?? undefined,
+    members: p.members ?? [],
     tasks: [],
   }));
 
@@ -58,7 +60,7 @@ export default function Projects() {
     return items.filter(
       (p) =>
         p.title.toLowerCase().includes(t) ||
-        (p.description || EMPTY_STRING).toLowerCase().includes(t)
+        (p.description || EMPTY_STRING).toLowerCase().includes(t),
     );
   }, [q, items]);
 
