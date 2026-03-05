@@ -19,17 +19,13 @@ def reset_database():
 def run():
     db = SessionLocal()
 
-    # -----------------------
     # ROLES
-    # -----------------------
     admin_role = Role(name="Admin", description="System administrator")
     user_role = Role(name="User", description="Regular user")
     db.add_all([admin_role, user_role])
     db.commit()
 
-    # -----------------------
     # USERS
-    # -----------------------
     alice = User(
         email="alice@taskwise.com", name="Alice Johnson", role_id=admin_role.id
     )
@@ -38,12 +34,11 @@ def run():
         email="charlie@taskwise.com", name="Charlie Brown", role_id=user_role.id
     )
     diana = User(email="diana@taskwise.com", name="Diana Prince", role_id=user_role.id)
+
     db.add_all([alice, bob, charlie, diana])
     db.commit()
 
-    # ======================================================
-    # PROJECT 1 — Website Redesign (Owner: Bob)
-    # ======================================================
+    # PROJECT 1
     p1 = Project(
         name="Website Redesign",
         description="Revamp company website",
@@ -62,14 +57,12 @@ def run():
     )
     db.commit()
 
-    # Tasks for Project 1 (single assignee per task)
     t1 = Task(
         title="Design landing page",
         description="Create wireframes",
         status=TaskStatus.NEW.value,
         project_id=p1.id,
         created_by_id=bob.id,
-        assignee_id=charlie.id,
     )
     db.add(t1)
     db.commit()
@@ -82,7 +75,6 @@ def run():
         status=TaskStatus.IN_PROGRESS.value,
         project_id=p1.id,
         created_by_id=bob.id,
-        assignee_id=charlie.id,  # only one assignee
     )
     db.add(t2)
     db.commit()
@@ -95,16 +87,13 @@ def run():
         status=TaskStatus.BLOCKED.value,
         project_id=p1.id,
         created_by_id=bob.id,
-        assignee_id=bob.id,
     )
     db.add(t3)
     db.commit()
     db.add(TaskAssignee(task_id=t3.id, user_id=bob.id))
     db.commit()
 
-    # ======================================================
-    # PROJECT 2 — Mobile App Launch (Owner: Charlie)
-    # ======================================================
+    # PROJECT 2
     p2 = Project(
         name="Mobile App Launch",
         description="Launch new mobile application",
@@ -128,7 +117,6 @@ def run():
         status=TaskStatus.NEW.value,
         project_id=p2.id,
         created_by_id=charlie.id,
-        assignee_id=bob.id,
     )
     db.add(t4)
     db.commit()
@@ -141,16 +129,13 @@ def run():
         status=TaskStatus.DONE.value,
         project_id=p2.id,
         created_by_id=charlie.id,
-        assignee_id=charlie.id,
     )
     db.add(t5)
     db.commit()
     db.add(TaskAssignee(task_id=t5.id, user_id=charlie.id))
     db.commit()
 
-    # ======================================================
-    # PROJECT 3 — Internal Tools Upgrade (Owner: Diana)
-    # ======================================================
+    # PROJECT 3
     p3 = Project(
         name="Internal Tools Upgrade",
         description="Upgrade internal admin dashboards",
@@ -169,7 +154,6 @@ def run():
         status=TaskStatus.IN_PROGRESS.value,
         project_id=p3.id,
         created_by_id=diana.id,
-        assignee_id=diana.id,
     )
     db.add(t6)
     db.commit()
