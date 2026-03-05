@@ -4,7 +4,7 @@ from app.db.session import SessionLocal
 from app.models.user import User
 from app.models.role import Role
 from app.schemas.user import UserCreate, UserRead, UserBase
-from app.core.security import get_current_user, require_role
+from app.core.security import require_role
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
 
