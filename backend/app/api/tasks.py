@@ -153,9 +153,7 @@ def update_task(
     if "assignees" in payload:
 
         # remove existing
-        db.query(TaskAssignee).filter(
-            TaskAssignee.task_id == task_id
-        ).delete()
+        db.query(TaskAssignee).filter(TaskAssignee.task_id == task_id).delete()
 
         # add new
         for user_id in payload["assignees"]:
@@ -222,9 +220,7 @@ def delete_task(
             raise HTTPException(status_code=403, detail="Not authorized")
 
     # Delete assignees
-    db.query(TaskAssignee).filter(
-        TaskAssignee.task_id == task_id
-    ).delete()
+    db.query(TaskAssignee).filter(TaskAssignee.task_id == task_id).delete()
 
     # Delete task
     db.delete(task)

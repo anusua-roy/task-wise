@@ -78,7 +78,7 @@ def update_user(
 
     # Validate role
     role = db.query(Role).filter(Role.id == payload.role_id).first()
-    
+
     if not role:
         raise HTTPException(status_code=400, detail="Invalid role")
 

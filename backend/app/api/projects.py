@@ -42,6 +42,7 @@ def create_project(
 
     return project
 
+
 # ==========================================================
 # LIST PROJECTS
 # Anyone logged in can view all projects
@@ -57,10 +58,7 @@ def list_projects(
         .join(ProjectMember, ProjectMember.project_id == Project.id)
         .filter(
             (Project.created_by_id == current_user.id)
-            | (
-                (ProjectMember.user_id == current_user.id)
-                
-            )
+            | ((ProjectMember.user_id == current_user.id))
         )
         .distinct()
         .all()
@@ -72,11 +70,7 @@ def list_projects(
 
         creator = db.query(User).filter(User.id == p.created_by_id).first()
 
-        members = (
-            db.query(ProjectMember)
-            .filter(ProjectMember.project_id == p.id)
-            .all()
-        )
+        members = db.query(ProjectMember).filter(ProjectMember.project_id == p.id).all()
 
         formatted_members = []
 
@@ -229,7 +223,9 @@ def update_project(
     )
 
     if not membership and project.created_by_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to update this project")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to update this project"
+        )
 
     # Update fields
     project.name = payload.name
