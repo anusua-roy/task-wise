@@ -1,4 +1,9 @@
-import { SIDEBAR_OPTIONS, OTHER_PAGE_NAMES, PAGE_DESCRIPTIONS } from "../constants/App.constants";
+import {
+  SIDEBAR_OPTIONS,
+  OTHER_PAGE_NAMES,
+  PAGE_DESCRIPTIONS,
+  EMPTY_STRING,
+} from "../constants/App.constants";
 
 export const ROUTE_NAMES: any = {
   ROOT: "/",
@@ -24,7 +29,7 @@ export const ROUTE_META = [
     description: PAGE_DESCRIPTIONS.PROJECTS,
   },
   {
-    test: (p: string) => p.startsWith(ROUTE_NAMES.PROJECT("")),
+    test: (p: string) => p.startsWith(ROUTE_NAMES.PROJECT(EMPTY_STRING)),
     title: OTHER_PAGE_NAMES.PROJECT,
     description: PAGE_DESCRIPTIONS.PROJECT,
   },
@@ -43,9 +48,9 @@ export const ROUTE_META = [
     title: OTHER_PAGE_NAMES.PROFILE,
     description: PAGE_DESCRIPTIONS.PROFILE,
   },
-  {
-    test: (p: string) => p.startsWith(ROUTE_NAMES.SETTINGS),
-    title: SIDEBAR_OPTIONS.SETTINGS,
-    description: PAGE_DESCRIPTIONS.SETTINGS,
-  },
+  // {
+  //   test: (p: string) => p.startsWith(ROUTE_NAMES.SETTINGS),
+  //   title: SIDEBAR_OPTIONS.SETTINGS,
+  //   description: PAGE_DESCRIPTIONS.SETTINGS,
+  // },
 ];

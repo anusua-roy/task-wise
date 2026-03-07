@@ -18,19 +18,28 @@ def create_user(
     db: Session = Depends(get_db),
     admin_user=Depends(require_role("Admin")),
 ):
-    # Check if role exists
+
     role = db.query(Role).filter(Role.id == payload.role_id).first()
+
+    if not role:
+        role = db.query(Role).filter(Role.name == payload.role_id).first()
+
     if not role:
         raise HTTPException(status_code=400, detail="Invalid role")
 
-    # Check if email already exists
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    new_user = User(email=payload.email, name=payload.name, role_id=payload.role_id)
+    new_user = User(
+        email=payload.email,
+        name=payload.name,
+        role_id=role.id,
+    )
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
     return new_user
 
 
@@ -69,6 +78,10 @@ def update_user(
 
     # Validate role
     role = db.query(Role).filter(Role.id == payload.role_id).first()
+
+    if not role:
+        raise HTTPException(status_code=400, detail="Invalid role")
+
     if not role:
         raise HTTPException(status_code=400, detail="Invalid role")
 

@@ -16,7 +16,6 @@ import { MY_TASKS_QUERY, PROJECTS_QUERY } from "../constants/Query.constants";
 import TaskGrid from "../components/TaskGrid";
 
 export default function Dashboard() {
-
   const {
     data: projects,
     isLoading: projectsLoading,
@@ -48,17 +47,11 @@ export default function Dashboard() {
       {/* ========================= */}
       {/* My Projects */}
       {/* ========================= */}
-      <div className="cards-row" role="list">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {(projects ?? []).map((proj: any) => (
           <ProjectCard
             key={proj.id}
-            project={{
-              id: proj.id,
-              title: proj.name,
-              description: proj.description ?? EMPTY_STRING,
-              tags: [],
-              created_at: proj.created_at,
-            }}
+            project={{ ...proj, title: proj.name ?? EMPTY_STRING }}
           />
         ))}
       </div>
@@ -72,7 +65,7 @@ export default function Dashboard() {
         {(tasks ?? []).length === 0 ? (
           <p style={{ marginTop: 12 }}>{ERR_MSG.NO_TASKS}</p>
         ) : (
-          <TaskGrid tasks={tasks ?? []} />
+          <TaskGrid filteredTasks={tasks ?? []} showAssignee={false} />
         )}
       </section>
     </div>

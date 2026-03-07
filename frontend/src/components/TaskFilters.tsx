@@ -13,7 +13,6 @@ interface Props {
   setQuery: (q: string) => void;
   status: string;
   setStatus: (s: string) => void;
-  tagOptions: string[];
   selectedTag?: string;
   setSelectedTag: (t?: string) => void;
   onClear?: () => void;
@@ -24,9 +23,6 @@ export default function TaskFilters({
   setQuery,
   status,
   setStatus,
-  tagOptions,
-  selectedTag,
-  setSelectedTag,
   onClear,
 }: Props) {
   return (
@@ -66,21 +62,6 @@ export default function TaskFilters({
         <option value={TASK_STATUS.BLOCKED}>{TASK_STATUS.BLOCKED}</option>
         <option value={TASK_STATUS.DONE}>{TASK_STATUS.DONE}</option>
       </select>
-
-      {/* Tag Filter */}
-      {/* <select
-        value={selectedTag || EMPTY_STRING}
-        onChange={(e) => setSelectedTag(e.target.value || undefined)}
-        aria-label="Filter by tag"
-        className="px-2 py-2 border border-black/10 rounded-md"
-      >
-        <option value={EMPTY_STRING}>{OTHERS.ALL_TAGS}</option>
-        {tagOptions.map((t) => (
-          <option key={t} value={t}>
-            {t}
-          </option>
-        ))}
-      </select> */}
 
       {/* Clear Button */}
       <button

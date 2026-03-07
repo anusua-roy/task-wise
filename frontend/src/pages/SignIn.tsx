@@ -40,7 +40,7 @@ export default function SignIn() {
       <div className="hidden w-[50%] sm:flex justify-center ">
         <FaTasks className="text-orange-600 font-semibold text-[235px]" />
       </div>
-      <div className="w-full sm:w-[50%] max-w-md bg-card border border-orange-600 border-2 p-6 rounded-xl shadow">
+      <div className="w-full sm:w-[50%] max-w-md bg-card border-orange-600 border-2 p-6 rounded-xl shadow">
         <div className="mb-6">
           <h1 className="text-lg font-semibold text-orange-600">
             {OTHERS.WELCOME}
@@ -54,7 +54,7 @@ export default function SignIn() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder={PLACEHOLDERS.EMAIL_EXAMPLE}
-          className="bg-orange-100 border border-orange-600 w-full p-2.5 rounded-lg border border-border bg-bg text-fg mb-4"
+          className="bg-orange-100 border border-orange-600 w-full p-2.5 rounded-lg border-border bg-bg text-fg mb-4"
         />
 
         <button

@@ -51,17 +51,10 @@ export default function MyTasksPage() {
     })();
   }, []);
 
-  const tagOptions = useMemo(() => {
-    const s = new Set<string>();
-    tasks.forEach((t) => t.tags?.forEach((tag) => s.add(tag)));
-    return Array.from(s);
-  }, [tasks]);
-
   const filtered = useMemo(() => {
     return tasks.filter((t) => {
       if (statusFilter !== TASK_STATUS.ALL && t.status !== statusFilter)
         return false;
-      if (tagFilter && !(t.tags || []).includes(tagFilter)) return false;
       if (query.trim()) {
         const q = query.toLowerCase();
         return (t.title + " " + (t.description || EMPTY_STRING))
@@ -135,17 +128,10 @@ export default function MyTasksPage() {
           setQuery={setQuery}
           status={statusFilter}
           setStatus={setStatusFilter}
-          tagOptions={tagOptions}
           selectedTag={tagFilter}
           setSelectedTag={setTagFilter}
           onClear={onClear}
         />
-        <button
-          onClick={onCreateClick}
-          className="px-3 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700"
-        >
-          {BUTTON_NAMES.ADD_TASK}
-        </button>
       </div>
 
       {loading && <p>{PAGE_LOADING}</p>}
@@ -163,7 +149,7 @@ export default function MyTasksPage() {
 
       {/* Task Grid */}
       <section className="w-full">
-        <TaskGrid tasks={filtered} />
+        <TaskGrid filteredTasks={filtered} showAssignee={false} />
       </section>
 
       {/* Modal */}

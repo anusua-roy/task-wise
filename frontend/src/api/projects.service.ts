@@ -15,3 +15,13 @@ export function createProject(data: { name: string; description?: string }) {
 export const getProjectById = async (id: string) => {
   return http<IProject>(`/api/projects/${id}`);
 };
+
+export function updateProject(
+  id: string,
+  data: { name: string; description?: string },
+) {
+  return http(`/api/projects/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
