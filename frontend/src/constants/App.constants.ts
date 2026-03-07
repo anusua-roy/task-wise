@@ -17,15 +17,18 @@ export const BUTTON_NAMES = {
   SAVE: "Save",
   CREATE: "Create",
   CANCEL: "Cancel",
+  DELETE: "Delete",
   CLEAR: "Clear",
   SSO_LOGIN: "Sign in with SSO",
   SIGN_IN: "Sign In",
+  NEW_USER: "New User",
+  EDIT:"Edit"
 };
 
 export const ERR_MSG = {
   AUTH_FAILURE: "Authentication failed",
   PROJECT_NOT_FOUND: "Project not found.",
-  NO_TASKS: "No tasks assigned to you.",
+  NO_TASKS: "No tasks assigned.",
   PROJECTS_LOADING: "Error loading projects:",
   TASKS_LOADING: "Error loading tasks:",
   USERS_LOADING: "Error loading users:",
@@ -101,4 +104,6 @@ export const OTHERS = {
   FILTER_CHANGE: "No tasks match — try clearing filters or create a new task.",
   ALL_TAGS: "All tags",
   SIGNING_IN: "Signing in...",
+  SAVING: "Saving...",
+  CREATING: "Creating...",
 };

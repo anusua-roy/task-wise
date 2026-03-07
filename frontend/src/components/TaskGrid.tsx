@@ -1,28 +1,41 @@
 import React, { useState } from "react";
-import { TASK_STATUS, TASK_TABLE } from "../constants/App.constants";
+import { BUTTON_NAMES, EMPTY_STRING, TASK_STATUS, TASK_TABLE } from "../constants/App.constants";
 import { Task } from "../types/task.type";
 import StatusBadge from "./StatusBadge";
 import { FiEdit2, FiTrash2, FiCheck, FiX } from "react-icons/fi";
 import { useAppContext } from "../contexts/AppContext";
-import * as tasksApi from "../api/tasks.service";
+import { useQueryClient } from "@tanstack/react-query";
+import { updateTask, deleteTask } from "../api/tasks.service";
 import toast from "react-hot-toast";
+import { PROJECT_DETAIL_QUERY } from "../constants/Query.constants";
 
 interface Props {
   filteredTasks: Task[];
   showAssignee?: boolean; // only true in ProjectDetail
+  projectId?: string;
 }
 
 export default function TaskGrid({
   filteredTasks,
   showAssignee = false,
+  projectId = EMPTY_STRING,
 }: Props) {
-  const { tasks, users, setTasks } = useAppContext();
+  const { users } = useAppContext();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Partial<Task>>({});
+  const [draft, setDraft] = useState<Partial<any>>({});
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  const queryClient = useQueryClient();
   const startEdit = (task: Task) => {
     setEditingId(task.id);
-    setDraft(task);
+
+    setDraft({
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      assignees: task.assignees?.map((a) => a.id) || [],
+    });
   };
 
   const cancelEdit = () => {
@@ -36,28 +49,56 @@ export default function TaskGrid({
 
   const saveEdit = async () => {
     if (!editingId) return;
+
     try {
-      // const updatedTask = await tasksApi.updateTask(editingId, draft);
-      // // Update context tasks (full list)
-      // setTasks((prev) =>
-      //   prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)),
-      // );
-      // setEditingId(null);
+      const payload = {
+        title: draft.title,
+        description: draft.description,
+        status: draft.status,
+        assignees: draft.assignees ?? [],
+      };
+
+      await updateTask(editingId, payload);
+
+      if (projectId) {
+        queryClient.invalidateQueries({
+          queryKey: [PROJECT_DETAIL_QUERY, projectId],
+        });
+      }
+
+      setEditingId(null);
+      setDraft({});
+      toast.success("Task updated");
     } catch {
       toast.error("Failed to update task");
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete task?")) return;
-    try {
-      // await tasksApi.deleteTask(id);
-      // setTasks((prev) => prev.filter((t) => t.id !== id));
-    } catch {
-      toast.error("Failed to delete task");
-    }
+  const handleDeleteClick = (id: string) => {
+    setDeleteId(id);
+    setShowDeleteConfirm(true);
   };
 
+ const confirmDelete = async () => {
+   if (!deleteId) return;
+
+   try {
+     await deleteTask(deleteId);
+
+     if (projectId) {
+       queryClient.invalidateQueries({
+         queryKey: [PROJECT_DETAIL_QUERY, projectId],
+       });
+     }
+
+     toast.success("Task deleted");
+
+     setDeleteId(null);
+     setShowDeleteConfirm(false);
+   } catch {
+     toast.error("Failed to delete task");
+   }
+ };
   return (
     <div className="w-full mt-4 border rounded-md overflow-hidden">
       {/* Header */}
@@ -85,7 +126,7 @@ export default function TaskGrid({
             <div className="col-span-2">
               {isEditing ? (
                 <input
-                  value={draft.title || ""}
+                  value={draft.title || EMPTY_STRING}
                   onChange={(e) => handleChange("title", e.target.value)}
                   className="w-full mx-1 h-9 px-3 text-sm border border-gray-300 rounded-md
                              bg-white focus:outline-none focus:ring-2
@@ -100,7 +141,7 @@ export default function TaskGrid({
             <div className="col-span-2">
               {isEditing ? (
                 <input
-                  value={draft.description || ""}
+                  value={draft.description || EMPTY_STRING}
                   onChange={(e) => handleChange("description", e.target.value)}
                   className="w-full mx-1 h-9 px-3 text-sm border border-gray-300 rounded-md
                              bg-white focus:outline-none focus:ring-2
@@ -142,18 +183,18 @@ export default function TaskGrid({
               <div>
                 {isEditing ? (
                   <select
-                    value={draft.assignees?.[0].id || ""}
+                    value={draft.assignees?.[0] || EMPTY_STRING}
                     onChange={(e) =>
                       handleChange(
-                        "assignee",
-                        users.find((u) => u.id === e.target.value),
+                        "assignees",
+                        e.target.value ? [e.target.value] : [],
                       )
                     }
                     className="w-full mx-1 h-9 px-2 text-sm border border-gray-300 rounded-md
                                bg-white focus:outline-none focus:ring-2
                                focus:ring-orange-500/30 focus:border-orange-500 transition"
                   >
-                    <option value="">Unassigned</option>
+                    <option value={EMPTY_STRING}>Unassigned</option>
                     {users.map((user) => (
                       <option key={user.id} value={user.id}>
                         {user.name}
@@ -162,7 +203,7 @@ export default function TaskGrid({
                   </select>
                 ) : (
                   <span className="text-sm text-gray-700">
-                    {task.assignees?.[0].name || "Unassigned"}
+                    {task.assignees?.[0]?.name || "Unassigned"}
                   </span>
                 )}
               </div>
@@ -194,7 +235,7 @@ export default function TaskGrid({
                     <FiEdit2 size={16} />
                   </button>
                   <button
-                    onClick={() => handleDelete(task.id)}
+                    onClick={() => handleDeleteClick(task.id)}
                     className="flex items-center justify-center h-9 w-9 text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition"
                   >
                     <FiTrash2 size={16} />
@@ -205,6 +246,34 @@ export default function TaskGrid({
           </div>
         );
       })}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-5">
+            <h3 className="text-lg font-semibold text-gray-900">Delete Task</h3>
+
+            <p className="text-sm text-gray-600 mt-2">
+              Are you sure you want to delete this task? This action cannot be
+              undone.
+            </p>
+
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50"
+              >
+                {BUTTON_NAMES.CANCEL}
+              </button>
+
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700"
+              >
+                {BUTTON_NAMES.DELETE}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

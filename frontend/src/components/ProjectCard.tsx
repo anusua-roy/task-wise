@@ -2,6 +2,7 @@ import React from "react";
 import { IProject } from "../types/project.type";
 import { useNavigate } from "react-router-dom";
 import { ROUTE_NAMES } from "../routes/constants";
+import { EMPTY_STRING } from "../constants/App.constants";
 
 export default function ProjectCard({ project }: { project: IProject }) {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export default function ProjectCard({ project }: { project: IProject }) {
     return name
       .split(" ")
       .map((n) => n[0])
-      .join("")
+      .join(EMPTY_STRING)
       .slice(0, 2)
       .toUpperCase();
   }

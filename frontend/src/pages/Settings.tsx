@@ -1,5 +1,6 @@
 // frontend/src/pages/Settings.tsx
 import React, { useState } from "react";
+import { BUTTON_NAMES } from "../constants/App.constants";
 
 export default function Settings() {
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -58,10 +59,10 @@ export default function Settings() {
 
         <div className="p-4 border rounded-md bg-[color:var(--card-bg)] flex justify-end">
           <button className="rounded-md px-4 py-2 text-sm border mr-2">
-            Cancel
+            {BUTTON_NAMES.CANCEL}
           </button>
           <button className="rounded-md px-4 py-2 text-sm bg-[color:var(--primary)] text-white">
-            Save
+            {BUTTON_NAMES.SAVE}
           </button>
         </div>
       </div>

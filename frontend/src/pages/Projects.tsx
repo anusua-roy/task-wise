@@ -1,6 +1,5 @@
 // frontend/src/pages/Projects.tsx
 import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import ProjectCard from "../components/ProjectCard";
 import { IProject } from "../types/project.type";
 import { useForm } from "react-hook-form";
@@ -9,12 +8,14 @@ import {
   EMPTY_STRING,
   ERR_MSG,
   FORM_LABEL,
+  OTHERS,
   PAGE_LOADING,
   PLACEHOLDERS,
 } from "../constants/App.constants";
-import { useQuery } from "@tanstack/react-query";
-import { getProjects } from "../api/projects.service";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { getProjects, createProject } from "../api/projects.service";
 import { PROJECTS_QUERY } from "../constants/Query.constants";
+import toast from "react-hot-toast";
 
 type FormValues = {
   title: string;
@@ -25,6 +26,26 @@ type FormValues = {
 export default function Projects() {
   const [q, setQ] = useState(EMPTY_STRING);
   const [editing, setEditing] = useState<IProject | null>(null);
+
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: createProject,
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PROJECTS_QUERY] });
+
+      setShowForm(false); // close modal
+      reset(); // reset form
+
+      toast.success("Project created successfully");
+    },
+
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to create project");
+    },
+  });
+
   const { data, isLoading, error } = useQuery({
     queryKey: [PROJECTS_QUERY],
     queryFn: getProjects,
@@ -74,24 +95,10 @@ export default function Projects() {
   };
 
   const onSubmit = (data: FormValues) => {
-    // minimal payload conversion; keep same Project shape you have
-    const newProject: IProject = {
-      id: `p_${Math.random().toString(36).slice(2, 9)}`,
-      title: data.title,
+    mutation.mutate({
+      name: data.title,
       description: data.description || EMPTY_STRING,
-      tags: data.tags
-        ? data.tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean)
-        : [],
-      // fill optional fields conservatively
-      createdAt: new Date().toISOString(),
-      updatedAt: undefined,
-    } as unknown as IProject;
-
-    // setItems((s) => [newProject, ...s]);
-    setShowForm(false);
+    });
   };
 
   if (isLoading) return <div>{PAGE_LOADING}</div>;
@@ -154,16 +161,6 @@ export default function Projects() {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm">{FORM_LABEL.TAGS}</label>
-                <input
-                  {...register("tags")}
-                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
-                />
-              </div>
-            </div>
-
             <div className="flex justify-end gap-2 mt-2">
               <button
                 type="button"
@@ -174,9 +171,10 @@ export default function Projects() {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+                disabled={mutation.isPending}
+                className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-60"
               >
-                {BUTTON_NAMES.CREATE}
+                {mutation.isPending ? OTHERS.CREATING : BUTTON_NAMES.CREATE}
               </button>
             </div>
           </form>

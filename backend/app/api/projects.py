@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from app.models.project import Project
+from app.schemas.project import CreateProjectRequest, UpdateProjectRequest
 from app.models.project_member import ProjectMember
 from app.models.task import Task, TaskAssignee
 from app.models.user import User
@@ -15,21 +16,19 @@ router = APIRouter(prefix="/api/projects", tags=["Projects"])
 # ==========================================================
 @router.post("/")
 def create_project(
-    payload: dict,
+    payload: CreateProjectRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     project = Project(
-        name=payload["name"],
-        description=payload.get("description"),
+        name=payload.name,
+        description=payload.description,
         created_by_id=current_user.id,
     )
 
     db.add(project)
-    db.commit()
-    db.refresh(project)
+    db.flush()  # get project.id without committing
 
-    # Add creator as Owner
     db.add(
         ProjectMember(
             project_id=project.id,
@@ -37,10 +36,11 @@ def create_project(
             role="Owner",
         )
     )
+
     db.commit()
+    db.refresh(project)
 
     return project
-
 
 # ==========================================================
 # LIST PROJECTS
@@ -51,7 +51,20 @@ def list_projects(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    projects = db.query(Project).all()
+
+    projects = (
+        db.query(Project)
+        .join(ProjectMember, ProjectMember.project_id == Project.id)
+        .filter(
+            (Project.created_by_id == current_user.id)
+            | (
+                (ProjectMember.user_id == current_user.id)
+                
+            )
+        )
+        .distinct()
+        .all()
+    )
 
     project_list = []
 
@@ -59,7 +72,11 @@ def list_projects(
 
         creator = db.query(User).filter(User.id == p.created_by_id).first()
 
-        members = db.query(ProjectMember).filter(ProjectMember.project_id == p.id).all()
+        members = (
+            db.query(ProjectMember)
+            .filter(ProjectMember.project_id == p.id)
+            .all()
+        )
 
         formatted_members = []
 
@@ -185,3 +202,40 @@ def get_project_detail(
         "tasks": formatted_tasks,
         "created_at": project.created_at,
     }
+
+
+@router.put("/{project_id}")
+def update_project(
+    project_id: str,
+    payload: UpdateProjectRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    project = db.query(Project).filter(Project.id == project_id).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Check if current user is Owner
+    membership = (
+        db.query(ProjectMember)
+        .filter(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == current_user.id,
+            ProjectMember.role == "Owner",
+        )
+        .first()
+    )
+
+    if not membership and project.created_by_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this project")
+
+    # Update fields
+    project.name = payload.name
+    project.description = payload.description
+
+    db.commit()
+    db.refresh(project)
+
+    return project

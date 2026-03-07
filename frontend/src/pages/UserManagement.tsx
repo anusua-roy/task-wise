@@ -3,13 +3,21 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   BUTTON_NAMES,
+  EMPTY_STRING,
   ERR_MSG,
   PAGE_LOADING,
 } from "../constants/App.constants";
-import { useQuery } from "@tanstack/react-query";
-import { getUsers } from "../api/users.service";
-import { USERS_QUERY } from "../constants/Query.constants";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+} from "../api/users.service";
+import { getRoles } from "../api/roles.service";
+import { USERS_QUERY, ROLES_QUERY } from "../constants/Query.constants";
 import { User, UserFormType } from "../types/user.type";
+import toast from "react-hot-toast";
 
 export default function UserManagement() {
   const [editing, setEditing] = useState<User | null>(null);
@@ -19,42 +27,84 @@ export default function UserManagement() {
     queryKey: [USERS_QUERY],
     queryFn: getUsers,
   });
+  const { data: roles = [] } = useQuery({
+    queryKey: [ROLES_QUERY],
+    queryFn: getRoles,
+  });
+  const queryClient = useQueryClient();
+
+  const createMutation = useMutation({
+    mutationFn: createUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [USERS_QUERY] });
+      toast.success("User created");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: any) => updateUser(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [USERS_QUERY] });
+      toast.success("User updated");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [USERS_QUERY] });
+      toast.success("User deleted");
+    },
+  });
 
   const users = data ?? [];
 
   const onCreate = () => {
-    reset({ id: "", name: "", email: "", role: "User" });
+    reset({
+      id: EMPTY_STRING,
+      name: EMPTY_STRING,
+      email: EMPTY_STRING,
+      role: "User",
+    });
     setEditing(null);
     setShowForm(true);
   };
 
   const onEdit = (u: User) => {
-    reset({ ...u, role: u.role.name });
+    const role = roles.find((r) => r.name === u.role.name);
+
+    reset({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: role?.id,
+    });
+
     setEditing(u);
     setShowForm(true);
   };
 
   const onDelete = (id: string) => {
     if (!confirm("Delete user?")) return;
-    // setUsers((s) => s.filter((u) => u.id !== id));
+    deleteMutation.mutate(id);
   };
 
   const onSubmit = (data: Partial<UserFormType>) => {
+    const payload = {
+      name: data.name,
+      email: data.email,
+      role_id: data.role,
+    };
+
     if (editing) {
-      // setUsers((s) =>
-      //   s.map((u) =>
-      //     u.id === editing.id ? ({ ...editing, ...data } as User) : u
-      //   )
-      // );
+      updateMutation.mutate({
+        id: editing.id,
+        data: payload,
+      });
     } else {
-      const newUser: User = {
-        id: `u_${Math.random().toString(36).slice(2, 8)}`,
-        name: data.name || "New user",
-        email: data.email || "",
-        role: (data.role as unknown as User["role"]) || "user",
-      };
-      // setUsers((s) => [newUser, ...s]);
+      createMutation.mutate(payload);
     }
+
     setShowForm(false);
   };
 
@@ -69,7 +119,7 @@ export default function UserManagement() {
           onClick={onCreate}
           className="px-3 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700"
         >
-          New User
+          {BUTTON_NAMES.NEW_USER}
         </button>
       </div>
 
@@ -92,14 +142,14 @@ export default function UserManagement() {
                 className="text-sm rounded-md px-2 py-1 border"
                 aria-label={`Edit ${u.name}`}
               >
-                Edit
+                {BUTTON_NAMES.EDIT}
               </button>
               <button
                 onClick={() => onDelete(u.id)}
                 className="text-sm rounded-md px-2 py-1 border text-red-600"
                 aria-label={`Delete ${u.name}`}
               >
-                Delete
+                {BUTTON_NAMES.DELETE}
               </button>
             </div>
           </div>
@@ -134,12 +184,12 @@ export default function UserManagement() {
 
             <div>
               <label className="flex flex-col gap-1 text-sm">Role</label>
-              <select
-                {...register("role")}
-                className="border border-gray-300 rounded px-2 py-2"
-              >
-                <option value="admin">Admin</option>
-                <option value="user">User</option>
+              <select {...register("role")}>
+                {roles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
               </select>
             </div>
 
