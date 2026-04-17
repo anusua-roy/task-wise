@@ -5,9 +5,7 @@ from app.core.config import DATABASE_URL
 engine = create_engine(
     DATABASE_URL,
     future=True,
-    connect_args=(
-        {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-    ),
+    pool_pre_ping=True,  # prevents stale connections (important for cloud DB)
 )
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
