@@ -6,14 +6,20 @@ from app.models.project import Project
 from app.models.task import Task, TaskAssignee
 from app.models.project_member import ProjectMember
 from app.core.enums import TaskStatus
+from sqlalchemy import text
 import os
 
 
 def reset_database():
-    print("Dropping all tables...")
-    Base.metadata.drop_all(bind=engine)
-    print("Recreating tables...")
+    print("Resetting database safely...")
+
+    with engine.connect() as conn:
+        conn.execute(text("DROP SCHEMA public CASCADE"))
+        conn.execute(text("CREATE SCHEMA public"))
+        conn.commit()
+
     Base.metadata.create_all(bind=engine)
+    print("Database reset complete.")
 
 
 def run():
@@ -24,6 +30,8 @@ def run():
     user_role = Role(name="User", description="Regular user")
     db.add_all([admin_role, user_role])
     db.commit()
+    db.refresh(admin_role)
+    db.refresh(user_role)
 
     # USERS
     alice = User(
