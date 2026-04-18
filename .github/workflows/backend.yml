@@ -100,6 +100,6 @@ jobs:
             docker pull 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:${{ github.sha }}
 
             echo "Starting new container..."
-            docker run -d --name taskwise --restart unless-stopped -p 8000:8000 -e DATABASE_URL=${{ secrets.DATABASE_URL }} 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:${{ github.sha }}
+            docker run -d --name taskwise --restart unless-stopped -p 8000:8000 -e DATABASE_URL='${{ secrets.DATABASE_URL }}' 736578948084.dkr.ecr.ap-south-1.amazonaws.com/taskwise-backend:${{ github.sha }}
 
             echo "Deployment completed successfully."
