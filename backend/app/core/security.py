@@ -1,24 +1,15 @@
-from fastapi import HTTPException, Depends
+from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
-from app.db.session import SessionLocal
+from jose import jwt
+
 from app.models.user import User
+from app.api.deps import get_db
+from sqlalchemy.orm import Session
+
+SECRET_KEY = "your-secret-key"
+ALGORITHM = "HS256"
 
 security = HTTPBearer()
-
-ROLE_HIERARCHY = {
-    "Read-Only": 1,
-    "Task Creator": 2,
-    "Admin": 3,
-}
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def get_current_user(
@@ -27,19 +18,29 @@ def get_current_user(
 ):
     token = credentials.credentials
 
-    # TEMP: token = email
-    user = db.query(User).filter(User.email == token).first()
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user = db.query(User).filter(User.id == user_id).first()
 
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid user")
+        raise HTTPException(status_code=401, detail="User not found")
 
     return user
 
 
-def require_role(required_role: str):
-    def role_checker(user: User = Depends(get_current_user)):
-        if ROLE_HIERARCHY[user.role.name] < ROLE_HIERARCHY[required_role]:
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
-        return user
+def require_role(role_name: str):
+    def role_checker(current_user: User = Depends(get_current_user)):
+
+        if current_user.role.name != role_name:
+            raise HTTPException(
+                status_code=403,
+                detail=f"{role_name} access required",
+            )
+
+        return current_user
 
     return role_checker

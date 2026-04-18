@@ -2,7 +2,10 @@ from fastapi import FastAPI
 from app.api import users, roles, projects, tasks, auth
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="FSE Task Tracker")
+app = FastAPI(
+    title="FSE Task Tracker",
+    swagger_ui_parameters={"persistAuthorization": True},
+)
 
 app.add_middleware(
     CORSMiddleware,

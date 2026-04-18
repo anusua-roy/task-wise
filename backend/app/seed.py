@@ -10,6 +10,9 @@ from sqlalchemy import text
 import os
 
 
+# =========================
+# RESET DB
+# =========================
 def reset_database():
     print("Resetting database safely...")
 
@@ -22,35 +25,63 @@ def reset_database():
     print("Database reset complete.")
 
 
+# =========================
+# SEED DATA
+# =========================
 def run():
     db = SessionLocal()
 
+    # ---------------------
     # ROLES
+    # ---------------------
     admin_role = Role(name="Admin", description="System administrator")
-    user_role = Role(name="User", description="Regular user")
-    db.add_all([admin_role, user_role])
+    creator_role = Role(name="Task Creator", description="Can manage projects/tasks")
+    readonly_role = Role(name="Read-Only", description="View + complete tasks only")
+
+    db.add_all([admin_role, creator_role, readonly_role])
     db.commit()
+
     db.refresh(admin_role)
-    db.refresh(user_role)
+    db.refresh(creator_role)
+    db.refresh(readonly_role)
 
+    # ---------------------
     # USERS
-    alice = User(
-        email="alice@taskwise.com", name="Alice Johnson", role_id=admin_role.id
+    # ---------------------
+    admin = User(
+        email="admin@taskwise.com",
+        name="Admin User",
+        role_id=admin_role.id,
     )
-    bob = User(email="bob@taskwise.com", name="Bob Smith", role_id=user_role.id)
-    charlie = User(
-        email="charlie@taskwise.com", name="Charlie Brown", role_id=user_role.id
-    )
-    diana = User(email="diana@taskwise.com", name="Diana Prince", role_id=user_role.id)
 
-    db.add_all([alice, bob, charlie, diana])
+    creator1 = User(
+        email="creator1@taskwise.com",
+        name="Project Owner 1",
+        role_id=creator_role.id,
+    )
+
+    creator2 = User(
+        email="creator2@taskwise.com",
+        name="Project Owner 2",
+        role_id=creator_role.id,
+    )
+
+    readonly = User(
+        email="readonly@taskwise.com",
+        name="Read Only User",
+        role_id=readonly_role.id,
+    )
+
+    db.add_all([admin, creator1, creator2, readonly])
     db.commit()
 
-    # PROJECT 1
+    # ---------------------
+    # PROJECT 1 (creator1)
+    # ---------------------
     p1 = Project(
         name="Website Redesign",
         description="Revamp company website",
-        created_by_id=bob.id,
+        created_by_id=creator1.id,
     )
     db.add(p1)
     db.commit()
@@ -58,54 +89,48 @@ def run():
 
     db.add_all(
         [
-            ProjectMember(project_id=p1.id, user_id=bob.id, role="Owner"),
-            ProjectMember(project_id=p1.id, user_id=charlie.id, role="Member"),
-            ProjectMember(project_id=p1.id, user_id=diana.id, role="Member"),
+            ProjectMember(project_id=p1.id, user_id=creator1.id, role="Owner"),
+            ProjectMember(project_id=p1.id, user_id=creator2.id, role="Member"),
+            ProjectMember(project_id=p1.id, user_id=readonly.id, role="Member"),
         ]
     )
     db.commit()
 
+    # TASKS (P1)
     t1 = Task(
         title="Design landing page",
         description="Create wireframes",
         status=TaskStatus.NEW.value,
         project_id=p1.id,
-        created_by_id=bob.id,
+        created_by_id=creator1.id,
     )
-    db.add(t1)
-    db.commit()
-    db.add(TaskAssignee(task_id=t1.id, user_id=charlie.id))
-    db.commit()
 
     t2 = Task(
         title="Implement hero section",
-        description="Frontend implementation",
+        description="Frontend work",
         status=TaskStatus.IN_PROGRESS.value,
         project_id=p1.id,
-        created_by_id=bob.id,
+        created_by_id=creator1.id,
     )
-    db.add(t2)
-    db.commit()
-    db.add(TaskAssignee(task_id=t2.id, user_id=charlie.id))
+
+    db.add_all([t1, t2])
     db.commit()
 
-    t3 = Task(
-        title="Setup CI/CD",
-        description="Configure deployment pipeline",
-        status=TaskStatus.BLOCKED.value,
-        project_id=p1.id,
-        created_by_id=bob.id,
+    db.add_all(
+        [
+            TaskAssignee(task_id=t1.id, user_id=readonly.id),
+            TaskAssignee(task_id=t2.id, user_id=creator2.id),
+        ]
     )
-    db.add(t3)
-    db.commit()
-    db.add(TaskAssignee(task_id=t3.id, user_id=bob.id))
     db.commit()
 
-    # PROJECT 2
+    # ---------------------
+    # PROJECT 2 (creator2)
+    # ---------------------
     p2 = Project(
         name="Mobile App Launch",
-        description="Launch new mobile application",
-        created_by_id=charlie.id,
+        description="Launch mobile app",
+        created_by_id=creator2.id,
     )
     db.add(p2)
     db.commit()
@@ -113,65 +138,34 @@ def run():
 
     db.add_all(
         [
-            ProjectMember(project_id=p2.id, user_id=charlie.id, role="Owner"),
-            ProjectMember(project_id=p2.id, user_id=bob.id, role="Member"),
+            ProjectMember(project_id=p2.id, user_id=creator2.id, role="Owner"),
+            ProjectMember(project_id=p2.id, user_id=creator1.id, role="Member"),
+            ProjectMember(project_id=p2.id, user_id=readonly.id, role="Member"),
         ]
     )
     db.commit()
 
-    t4 = Task(
-        title="Create API contracts",
+    t3 = Task(
+        title="API contracts",
         description="Define backend APIs",
         status=TaskStatus.NEW.value,
         project_id=p2.id,
-        created_by_id=charlie.id,
+        created_by_id=creator2.id,
     )
-    db.add(t4)
-    db.commit()
-    db.add(TaskAssignee(task_id=t4.id, user_id=bob.id))
+
+    db.add(t3)
     db.commit()
 
-    t5 = Task(
-        title="Setup Firebase",
-        description="Configure push notifications",
-        status=TaskStatus.DONE.value,
-        project_id=p2.id,
-        created_by_id=charlie.id,
-    )
-    db.add(t5)
-    db.commit()
-    db.add(TaskAssignee(task_id=t5.id, user_id=charlie.id))
-    db.commit()
-
-    # PROJECT 3
-    p3 = Project(
-        name="Internal Tools Upgrade",
-        description="Upgrade internal admin dashboards",
-        created_by_id=diana.id,
-    )
-    db.add(p3)
-    db.commit()
-    db.refresh(p3)
-
-    db.add(ProjectMember(project_id=p3.id, user_id=diana.id, role="Owner"))
-    db.commit()
-
-    t6 = Task(
-        title="Migrate database schema",
-        description="Refactor legacy tables",
-        status=TaskStatus.IN_PROGRESS.value,
-        project_id=p3.id,
-        created_by_id=diana.id,
-    )
-    db.add(t6)
-    db.commit()
-    db.add(TaskAssignee(task_id=t6.id, user_id=diana.id))
+    db.add(TaskAssignee(task_id=t3.id, user_id=readonly.id))
     db.commit()
 
     db.close()
     print("Database seeded successfully.")
 
 
+# =========================
+# ENTRY
+# =========================
 if __name__ == "__main__":
     if os.getenv("RESET_DB", "true").lower() == "true":
         reset_database()
