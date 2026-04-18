@@ -1,11 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from app.models.task import Task, TaskAssignee
 from app.models.project_member import ProjectMember
 from app.models.user import User
 from app.core.security import get_current_user
 from app.core.enums import TaskStatus
 from app.api.deps import get_db
+
+# NEW
+from app.services.auth_service import (
+    can_create_task,
+    can_modify_task,
+    can_update_task_status,
+    is_read_only,
+)
 
 router = APIRouter(prefix="/api/tasks", tags=["Tasks"])
 
@@ -19,18 +28,16 @@ def create_task(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+
     project_id = payload.get("project_id")
 
     if not project_id:
         raise HTTPException(status_code=400, detail="project_id is required")
 
-    # Validate status
-    status = payload.get("status", TaskStatus.NEW.value)
+    # ROLE CHECK
+    can_create_task(current_user)
 
-    if status not in [s.value for s in TaskStatus]:
-        raise HTTPException(status_code=400, detail="Invalid status")
-
-    # Ensure user can create task in project
+    # Ensure user is project member (unless admin)
     if current_user.role.name != "Admin":
         membership = (
             db.query(ProjectMember)
@@ -42,22 +49,24 @@ def create_task(
         )
 
         if not membership:
-            raise HTTPException(
-                status_code=403,
-                detail="Only project members can create tasks",
-            )
+            raise HTTPException(status_code=403, detail="Not a project member")
 
-    # Extract assignees
+    # Validate status
+    status = payload.get("status", TaskStatus.NEW.value)
+
+    if status not in [s.value for s in TaskStatus]:
+        raise HTTPException(status_code=400, detail="Invalid status")
+
+    # Handle assignees
     assignee_ids = payload.get("assignees", [])
 
-    # Validate assignee users
     if assignee_ids:
         users = db.query(User).filter(User.id.in_(assignee_ids)).all()
 
         if len(users) != len(assignee_ids):
-            raise HTTPException(status_code=404, detail="One or more users not found")
+            raise HTTPException(status_code=404, detail="Invalid users")
 
-        # Ensure assigned users become project members
+        # Ensure assignees are project members
         existing_members = (
             db.query(ProjectMember)
             .filter(
@@ -67,10 +76,10 @@ def create_task(
             .all()
         )
 
-        existing_member_ids = {m.user_id for m in existing_members}
+        existing_ids = {m.user_id for m in existing_members}
 
         for user_id in assignee_ids:
-            if user_id not in existing_member_ids:
+            if user_id not in existing_ids:
                 db.add(
                     ProjectMember(
                         project_id=project_id,
@@ -79,7 +88,6 @@ def create_task(
                     )
                 )
 
-    # Create task
     task = Task(
         title=payload["title"],
         description=payload.get("description"),
@@ -93,7 +101,6 @@ def create_task(
     db.commit()
     db.refresh(task)
 
-    # Insert assignees
     for user_id in assignee_ids:
         db.add(TaskAssignee(task_id=task.id, user_id=user_id))
 
@@ -118,29 +125,29 @@ def update_task(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    # Check membership
-    if current_user.role.name != "Admin":
-        membership = (
-            db.query(ProjectMember)
-            .filter(
-                ProjectMember.project_id == task.project_id,
-                ProjectMember.user_id == current_user.id,
+    # READ-ONLY USER LOGIC
+    if is_read_only(current_user):
+        if "status" not in payload or payload["status"] != TaskStatus.COMPLETED.value:
+            raise HTTPException(
+                status_code=403,
+                detail="Read-only user can only mark task as completed",
             )
-            .first()
-        )
 
-        if not membership:
-            raise HTTPException(status_code=403, detail="Not a project member")
+        can_update_task_status(current_user, task)
+        task.status = TaskStatus.COMPLETED.value
+        db.commit()
+        db.refresh(task)
+        return task
 
-    # Update title
+    # NORMAL AUTH
+    can_modify_task(current_user, task)
+
     if "title" in payload:
         task.title = payload["title"]
 
-    # Update description
     if "description" in payload:
         task.description = payload["description"]
 
-    # Update status
     if "status" in payload:
         if payload["status"] not in [s.value for s in TaskStatus]:
             raise HTTPException(status_code=400, detail="Invalid status")
@@ -151,11 +158,8 @@ def update_task(
 
     # Update assignees
     if "assignees" in payload:
-
-        # remove existing
         db.query(TaskAssignee).filter(TaskAssignee.task_id == task_id).delete()
 
-        # add new
         for user_id in payload["assignees"]:
             db.add(TaskAssignee(task_id=task_id, user_id=user_id))
 
@@ -167,13 +171,14 @@ def update_task(
 
 
 # ==========================================================
-# MY TASKS (Dashboard)
+# MY TASKS
 # ==========================================================
 @router.get("/my")
 def get_my_tasks(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+
     tasks = (
         db.query(Task)
         .join(TaskAssignee)
@@ -193,6 +198,9 @@ def get_my_tasks(
     ]
 
 
+# ==========================================================
+# DELETE TASK
+# ==========================================================
 @router.delete("/{task_id}")
 def delete_task(
     task_id: str,
@@ -205,26 +213,11 @@ def delete_task(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    # Permission check
-    if current_user.role.name != "Admin":
-        membership = (
-            db.query(ProjectMember)
-            .filter(
-                ProjectMember.project_id == task.project_id,
-                ProjectMember.user_id == current_user.id,
-            )
-            .first()
-        )
+    # STRICT AUTH (not just membership anymore)
+    can_modify_task(current_user, task)
 
-        if not membership:
-            raise HTTPException(status_code=403, detail="Not authorized")
-
-    # Delete assignees
     db.query(TaskAssignee).filter(TaskAssignee.task_id == task_id).delete()
-
-    # Delete task
     db.delete(task)
-
     db.commit()
 
     return {"message": "Task deleted successfully"}

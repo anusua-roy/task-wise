@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
+
 from app.models.project import Project
 from app.schemas.project import CreateProjectRequest, UpdateProjectRequest
 from app.models.project_member import ProjectMember
@@ -7,6 +8,13 @@ from app.models.task import Task, TaskAssignee
 from app.models.user import User
 from app.core.security import get_current_user
 from app.api.deps import get_db
+
+# NEW
+from app.services.auth_service import (
+    can_view_project,
+    can_modify_project,
+    can_create_task,
+)
 
 router = APIRouter(prefix="/api/projects", tags=["Projects"])
 
@@ -20,6 +28,10 @@ def create_project(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+
+    # Admin or Task Creator only
+    can_create_task(current_user)
+
     project = Project(
         name=payload.name,
         description=payload.description,
@@ -27,7 +39,7 @@ def create_project(
     )
 
     db.add(project)
-    db.flush()  # get project.id without committing
+    db.flush()
 
     db.add(
         ProjectMember(
@@ -45,7 +57,6 @@ def create_project(
 
 # ==========================================================
 # LIST PROJECTS
-# Anyone logged in can view all projects
 # ==========================================================
 @router.get("/")
 def list_projects(
@@ -58,7 +69,7 @@ def list_projects(
         .join(ProjectMember, ProjectMember.project_id == Project.id)
         .filter(
             (Project.created_by_id == current_user.id)
-            | ((ProjectMember.user_id == current_user.id))
+            | (ProjectMember.user_id == current_user.id)
         )
         .distinct()
         .all()
@@ -75,7 +86,6 @@ def list_projects(
         formatted_members = []
 
         for m in members:
-
             user = db.query(User).filter(User.id == m.user_id).first()
 
             if user:
@@ -113,8 +123,7 @@ def list_projects(
 
 
 # ==========================================================
-# PROJECT DETAIL
-# Anyone logged in can view
+# PROJECT DETAIL (FIXED SECURITY)
 # ==========================================================
 @router.get("/{project_id}")
 def get_project_detail(
@@ -132,6 +141,18 @@ def get_project_detail(
 
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+
+    # FIX: authorization added
+    membership = (
+        db.query(ProjectMember)
+        .filter(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    can_view_project(current_user, project, membership)
 
     tasks = (
         db.query(Task)
@@ -198,6 +219,9 @@ def get_project_detail(
     }
 
 
+# ==========================================================
+# UPDATE PROJECT (CLEANED)
+# ==========================================================
 @router.put("/{project_id}")
 def update_project(
     project_id: str,
@@ -211,23 +235,18 @@ def update_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # Check if current user is Owner
     membership = (
         db.query(ProjectMember)
         .filter(
             ProjectMember.project_id == project_id,
             ProjectMember.user_id == current_user.id,
-            ProjectMember.role == "Owner",
         )
         .first()
     )
 
-    if not membership and project.created_by_id != current_user.id:
-        raise HTTPException(
-            status_code=403, detail="Not authorized to update this project"
-        )
+    # CLEAN AUTH
+    can_modify_project(current_user, project, membership)
 
-    # Update fields
     project.name = payload.name
     project.description = payload.description
 
@@ -235,3 +254,36 @@ def update_project(
     db.refresh(project)
 
     return project
+
+
+# ==========================================================
+# DELETE PROJECT (NEW)
+# ==========================================================
+@router.delete("/{project_id}")
+def delete_project(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    project = db.query(Project).filter(Project.id == project_id).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    membership = (
+        db.query(ProjectMember)
+        .filter(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    # AUTH CHECK
+    can_modify_project(current_user, project, membership)
+
+    db.delete(project)
+    db.commit()
+
+    return {"message": "Project deleted successfully"}
