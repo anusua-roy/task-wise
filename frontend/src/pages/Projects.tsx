@@ -1,4 +1,3 @@
-// frontend/src/pages/Projects.tsx
 import React, { useMemo, useState } from "react";
 import ProjectCard from "../components/ProjectCard";
 import { IProject } from "../types/project.type";
@@ -7,58 +6,73 @@ import {
   BUTTON_NAMES,
   EMPTY_STRING,
   ERR_MSG,
-  FORM_LABEL,
   OTHERS,
   PAGE_LOADING,
   PLACEHOLDERS,
 } from "../constants/App.constants";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { getProjects, createProject } from "../api/projects.service";
+import { getUsersLookup } from "../api/users.service";
 import { PROJECTS_QUERY } from "../constants/Query.constants";
 import toast from "react-hot-toast";
+import { useAuth } from "../contexts/AuthContext";
+import { canCreateTask } from "../utils/common";
 
 type FormValues = {
   title: string;
   description?: string;
-  tags?: string;
 };
 
 export default function Projects() {
+  const { user } = useAuth();
+
+  // 🔍 project search
   const [q, setQ] = useState(EMPTY_STRING);
-  const [editing, setEditing] = useState<IProject | null>(null);
+
+  // 🔍 user search (FIXED)
+  const [userSearch, setUserSearch] = useState("");
+
+  const [showForm, setShowForm] = useState(false);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
 
   const queryClient = useQueryClient();
 
+  // =========================
+  // USERS
+  // =========================
+  const { data: users = [] } = useQuery({
+    queryKey: ["users_lookup"],
+    queryFn: getUsersLookup,
+  });
+
+  // =========================
+  // PROJECTS
+  // =========================
+  const { data, isLoading, error } = useQuery({
+    queryKey: [PROJECTS_QUERY],
+    queryFn: getProjects,
+  });
+
   const mutation = useMutation({
     mutationFn: createProject,
-
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [PROJECTS_QUERY] });
 
-      setShowForm(false); // close modal
-      reset(); // reset form
+      setShowForm(false);
+      reset();
+
+      // 🔥 RESET EVERYTHING CLEANLY
+      setSelectedMembers([]);
+      setUserSearch("");
 
       toast.success("Project created successfully");
     },
-
     onError: (error: any) => {
       toast.error(error?.message || "Failed to create project");
     },
   });
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: [PROJECTS_QUERY],
-    queryFn: getProjects,
-  });
-  // const mutation = useMutation({
-  //   mutationFn: createProject,
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({ queryKey: ["projects"] });
-  //   },
-  // });
-
   const { register, handleSubmit, reset } = useForm<FormValues>();
-  const [showForm, setShowForm] = useState(false);
 
   const backendProjects = data ?? [];
 
@@ -78,6 +92,7 @@ export default function Projects() {
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (!t) return items;
+
     return items.filter(
       (p) =>
         p.title.toLowerCase().includes(t) ||
@@ -89,8 +104,10 @@ export default function Projects() {
     reset({
       title: EMPTY_STRING,
       description: EMPTY_STRING,
-      tags: EMPTY_STRING,
     });
+
+    setSelectedMembers([]);
+    setUserSearch(""); // 🔥 important
     setShowForm(true);
   };
 
@@ -98,70 +115,139 @@ export default function Projects() {
     mutation.mutate({
       name: data.title,
       description: data.description || EMPTY_STRING,
+      member_ids: selectedMembers,
     });
   };
 
+  const toggleMember = (id: string) => {
+    setSelectedMembers((prev) =>
+      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id],
+    );
+  };
+
   if (isLoading) return <div>{PAGE_LOADING}</div>;
+
   if (error instanceof Error)
     return <div>{`${ERR_MSG.PROJECTS_LOADING} ${error.message}`}</div>;
 
   return (
     <div>
+      {/* ================= HEADER ================= */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={PLACEHOLDERS.SEARCH_PROJECT}
-          className="w-full sm:w-64 p-2.5 rounded-lg border border-border bg-[color:var(--card-bg)] text-sm"
+          className="w-full sm:w-64 p-2.5 rounded-lg border text-sm"
         />
-        <button
-          onClick={onCreateClick}
-          className="px-3 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700"
-        >
-          {BUTTON_NAMES.ADD_PROJECT}
-        </button>
+
+        {canCreateTask(user) && (
+          <button
+            onClick={onCreateClick}
+            className="px-3 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700"
+          >
+            {BUTTON_NAMES.ADD_PROJECT}
+          </button>
+        )}
       </div>
 
+      {/* ================= PROJECT GRID ================= */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((p) => (
           <ProjectCard key={p.id} project={p} />
         ))}
       </section>
 
-      {/* Modal: Add Project (matches Add Task style) */}
+      {/* ================= MODAL ================= */}
       {showForm && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 p-4">
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="bg-white p-4 rounded shadow-xl w-full max-w-lg flex flex-col gap-3"
-            role="dialog"
-            aria-modal="true"
-            aria-label={
-              editing ? BUTTON_NAMES.EDIT_PROJECT : BUTTON_NAMES.CREATE_PROJECT
-            }
           >
             <h2 className="text-xl font-semibold">
-              {editing
-                ? BUTTON_NAMES.EDIT_PROJECT
-                : BUTTON_NAMES.CREATE_PROJECT}
+              {BUTTON_NAMES.CREATE_PROJECT}
             </h2>
+
+            <input
+              {...register("title", { required: true })}
+              placeholder="Project Title"
+              className="border p-2"
+            />
+
+            <textarea
+              {...register("description")}
+              placeholder="Description"
+              className="border p-2"
+            />
+
+            {/* ================= MEMBERS ================= */}
             <div>
-              <label className="block text-sm">{FORM_LABEL.TITLE}</label>
+              <p className="text-sm font-medium mb-1">Add Members</p>
+
+              {/* SEARCH */}
               <input
-                {...register("title", { required: true })}
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="Search users..."
+                className="w-full border px-2 py-1 mb-2 text-sm rounded"
               />
+
+              {/* SELECTED */}
+              {selectedMembers.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {selectedMembers.map((id) => {
+                    const user = (users as any[]).find((u) => u.id === id);
+
+                    return (
+                      <span
+                        key={id}
+                        className="flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs"
+                      >
+                        {user?.name}
+                        <button
+                          type="button"
+                          onClick={() => toggleMember(id)}
+                          className="text-orange-700 hover:text-red-600"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* LIST */}
+              <div className="max-h-40 overflow-y-auto border rounded">
+                {(users as any[])
+                  .filter((u) =>
+                    u.name.toLowerCase().includes(userSearch.toLowerCase()),
+                  )
+                  .map((u: any) => {
+                    const selected = selectedMembers.includes(u.id);
+
+                    return (
+                      <div
+                        key={u.id}
+                        onClick={() => toggleMember(u.id)}
+                        className={`px-3 py-2 text-sm cursor-pointer flex justify-between items-center
+                        ${
+                          selected
+                            ? "bg-orange-50 text-orange-700"
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <span>{u.name}</span>
+                        {selected && <span>✓</span>}
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm">{FORM_LABEL.DESCRIPTION}</label>
-              <textarea
-                {...register("description")}
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-transparent"
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 mt-2">
+            {/* ================= ACTIONS ================= */}
+            <div className="flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
@@ -169,6 +255,7 @@ export default function Projects() {
               >
                 {BUTTON_NAMES.CANCEL}
               </button>
+
               <button
                 type="submit"
                 disabled={mutation.isPending}

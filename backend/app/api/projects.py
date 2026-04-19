@@ -1,35 +1,34 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from app.models.project import Project
-from app.schemas.project import CreateProjectRequest, UpdateProjectRequest
+from app.schemas.project import CreateProjectRequest
 from app.models.project_member import ProjectMember
 from app.models.task import Task, TaskAssignee
 from app.models.user import User
 from app.core.security import get_current_user
 from app.api.deps import get_db
 
-# NEW
 from app.services.auth_service import (
     can_view_project,
     can_modify_project,
     can_create_task,
 )
 
+from app.core.enums import TaskStatus
+
 router = APIRouter(prefix="/api/projects", tags=["Projects"])
 
 
-# ==========================================================
+# =========================
 # CREATE PROJECT
-# ==========================================================
+# =========================
 @router.post("/")
 def create_project(
     payload: CreateProjectRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
-    # Admin or Task Creator only
     can_create_task(current_user)
 
     project = Project(
@@ -41,6 +40,7 @@ def create_project(
     db.add(project)
     db.flush()
 
+    # Owner
     db.add(
         ProjectMember(
             project_id=project.id,
@@ -49,36 +49,53 @@ def create_project(
         )
     )
 
+    # Members
+    for user_id in payload.member_ids or []:
+        if user_id == current_user.id:
+            continue
+
+        exists = (
+            db.query(ProjectMember)
+            .filter(
+                ProjectMember.project_id == project.id, ProjectMember.user_id == user_id
+            )
+            .first()
+        )
+
+        if not exists:
+            db.add(ProjectMember(project_id=project.id, user_id=user_id, role="Member"))
+
     db.commit()
     db.refresh(project)
 
     return project
 
 
-# ==========================================================
+# =========================
 # LIST PROJECTS
-# ==========================================================
+# =========================
 @router.get("/")
 def list_projects(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
-    projects = (
-        db.query(Project)
-        .join(ProjectMember, ProjectMember.project_id == Project.id)
-        .filter(
-            (Project.created_by_id == current_user.id)
-            | (ProjectMember.user_id == current_user.id)
+    if current_user.role.name == "Admin":
+        projects = db.query(Project).all()
+    else:
+        projects = (
+            db.query(Project)
+            .join(ProjectMember)
+            .filter(
+                (Project.created_by_id == current_user.id)
+                | (ProjectMember.user_id == current_user.id)
+            )
+            .distinct()
+            .all()
         )
-        .distinct()
-        .all()
-    )
 
     project_list = []
 
     for p in projects:
-
         creator = db.query(User).filter(User.id == p.created_by_id).first()
 
         members = db.query(ProjectMember).filter(ProjectMember.project_id == p.id).all()
@@ -94,7 +111,6 @@ def list_projects(
                         "id": user.id,
                         "name": user.name,
                         "email": user.email,
-                        "role_id": user.role_id,
                         "role": m.role,
                     }
                 )
@@ -109,7 +125,6 @@ def list_projects(
                         "id": creator.id,
                         "name": creator.name,
                         "email": creator.email,
-                        "role_id": creator.role_id,
                     }
                     if creator
                     else None
@@ -122,27 +137,20 @@ def list_projects(
     return project_list
 
 
-# ==========================================================
-# PROJECT DETAIL (FIXED SECURITY)
-# ==========================================================
+# =========================
+# PROJECT DETAIL (FIXED)
+# =========================
 @router.get("/{project_id}")
 def get_project_detail(
     project_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
-    project = (
-        db.query(Project)
-        .options(joinedload(Project.tasks))
-        .filter(Project.id == project_id)
-        .first()
-    )
+    project = db.query(Project).filter(Project.id == project_id).first()
 
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(404, "Project not found")
 
-    # FIX: authorization added
     membership = (
         db.query(ProjectMember)
         .filter(
@@ -154,29 +162,32 @@ def get_project_detail(
 
     can_view_project(current_user, project, membership)
 
-    tasks = (
-        db.query(Task)
-        .options(joinedload(Task.assignees).joinedload(TaskAssignee.user))
-        .filter(Task.project_id == project_id)
-        .all()
+    # MEMBERS ADDED
+    members = (
+        db.query(ProjectMember).filter(ProjectMember.project_id == project_id).all()
     )
+
+    formatted_members = []
+
+    for m in members:
+        user = db.query(User).filter(User.id == m.user_id).first()
+
+        if user:
+            formatted_members.append(
+                {
+                    "id": user.id,
+                    "name": user.name,
+                    "email": user.email,
+                    "role": m.role,
+                }
+            )
+
+    tasks = db.query(Task).filter(Task.project_id == project_id).all()
 
     formatted_tasks = []
 
     for task in tasks:
-
-        creator = db.query(User).filter(User.id == task.created_by_id).first()
-
-        assignees = [
-            {
-                "id": a.user.id,
-                "name": a.user.name,
-                "email": a.user.email,
-                "role_id": a.user.role_id,
-            }
-            for a in task.assignees
-            if a.user
-        ]
+        assignees = db.query(TaskAssignee).filter(TaskAssignee.task_id == task.id).all()
 
         formatted_tasks.append(
             {
@@ -184,21 +195,16 @@ def get_project_detail(
                 "title": task.title,
                 "description": task.description,
                 "status": task.status,
-                "created_by": (
+                "assignees": [
                     {
-                        "id": creator.id,
-                        "name": creator.name,
-                        "email": creator.email,
-                        "role_id": creator.role_id,
+                        "id": a.user_id,
                     }
-                    if creator
-                    else None
-                ),
-                "assignees": assignees,
+                    for a in assignees
+                ],
             }
         )
 
-    project_creator = db.query(User).filter(User.id == project.created_by_id).first()
+    creator = db.query(User).filter(User.id == project.created_by_id).first()
 
     return {
         "id": project.id,
@@ -206,70 +212,32 @@ def get_project_detail(
         "description": project.description,
         "created_by": (
             {
-                "id": project_creator.id,
-                "name": project_creator.name,
-                "email": project_creator.email,
-                "role_id": project_creator.role_id,
+                "id": creator.id,
+                "name": creator.name,
+                "email": creator.email,
             }
-            if project_creator
+            if creator
             else None
         ),
+        "members": formatted_members,
         "tasks": formatted_tasks,
         "created_at": project.created_at,
     }
 
 
-# ==========================================================
-# UPDATE PROJECT (CLEANED)
-# ==========================================================
-@router.put("/{project_id}")
-def update_project(
-    project_id: str,
-    payload: UpdateProjectRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-
-    project = db.query(Project).filter(Project.id == project_id).first()
-
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    membership = (
-        db.query(ProjectMember)
-        .filter(
-            ProjectMember.project_id == project_id,
-            ProjectMember.user_id == current_user.id,
-        )
-        .first()
-    )
-
-    # CLEAN AUTH
-    can_modify_project(current_user, project, membership)
-
-    project.name = payload.name
-    project.description = payload.description
-
-    db.commit()
-    db.refresh(project)
-
-    return project
-
-
-# ==========================================================
-# DELETE PROJECT (NEW)
-# ==========================================================
+# =========================
+# DELETE PROJECT
+# =========================
 @router.delete("/{project_id}")
 def delete_project(
     project_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     project = db.query(Project).filter(Project.id == project_id).first()
 
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(404, "Project not found")
 
     membership = (
         db.query(ProjectMember)
@@ -280,10 +248,55 @@ def delete_project(
         .first()
     )
 
-    # AUTH CHECK
     can_modify_project(current_user, project, membership)
 
     db.delete(project)
     db.commit()
 
     return {"message": "Project deleted successfully"}
+
+
+# =========================
+# REMOVE MEMBER (FIXED STATUS)
+# =========================
+@router.delete("/{project_id}/members/{user_id}")
+def remove_member(
+    project_id: str,
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    project = db.query(Project).filter(Project.id == project_id).first()
+
+    if not project:
+        raise HTTPException(404, "Project not found")
+
+    if user_id == project.created_by_id:
+        raise HTTPException(400, "Cannot remove owner")
+
+    active_tasks = (
+        db.query(Task)
+        .join(TaskAssignee)
+        .filter(
+            Task.project_id == project_id,
+            TaskAssignee.user_id == user_id,
+            Task.status != TaskStatus.DONE.value,
+        )
+        .all()
+    )
+
+    if active_tasks:
+        raise HTTPException(400, "User has active tasks")
+
+    member = (
+        db.query(ProjectMember)
+        .filter(
+            ProjectMember.project_id == project_id, ProjectMember.user_id == user_id
+        )
+        .first()
+    )
+
+    db.delete(member)
+    db.commit()
+
+    return {"message": "Member removed"}

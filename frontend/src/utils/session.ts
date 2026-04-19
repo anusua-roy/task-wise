@@ -1,38 +1,40 @@
-// utils/session.ts
-
 const USER_KEY = "app_user";
 
-type StoredUser = {
+type StoredSession = {
   user: any;
+  token: string;
   expiresAt: number;
 };
 
-export function setSessionUser(user: any, ttlMs: number = 1000 * 60 * 60) {
-  // default 1h
-  const data: StoredUser = {
+export function setSession(user: any, token: string, ttlMs = 1000 * 60 * 60) {
+  const data: StoredSession = {
     user,
+    token,
     expiresAt: Date.now() + ttlMs,
   };
+
   localStorage.setItem(USER_KEY, JSON.stringify(data));
 }
 
-export function getSessionUser() {
+export function getSession() {
   const dataStr = localStorage.getItem(USER_KEY);
   if (!dataStr) return null;
 
   try {
-    const data: StoredUser = JSON.parse(dataStr);
+    const data: StoredSession = JSON.parse(dataStr);
+
     if (Date.now() > data.expiresAt) {
-      clearSessionUser();
+      clearSession();
       return null;
     }
-    return data.user;
+
+    return data;
   } catch {
-    clearSessionUser();
+    clearSession();
     return null;
   }
 }
 
-export function clearSessionUser() {
+export function clearSession() {
   localStorage.removeItem(USER_KEY);
 }

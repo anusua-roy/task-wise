@@ -8,12 +8,9 @@ from app.core.security import get_current_user
 from app.core.enums import TaskStatus
 from app.api.deps import get_db
 
-# NEW
 from app.services.auth_service import (
     can_create_task,
     can_modify_task,
-    can_update_task_status,
-    is_read_only,
 )
 
 router = APIRouter(prefix="/api/tasks", tags=["Tasks"])
@@ -28,13 +25,11 @@ def create_task(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     project_id = payload.get("project_id")
 
     if not project_id:
-        raise HTTPException(status_code=400, detail="project_id is required")
+        raise HTTPException(400, "project_id is required")
 
-    # ROLE CHECK
     can_create_task(current_user)
 
     # Ensure user is project member (unless admin)
@@ -49,25 +44,19 @@ def create_task(
         )
 
         if not membership:
-            raise HTTPException(status_code=403, detail="Not a project member")
+            raise HTTPException(403, "Not a project member")
 
     # Validate status
     status = payload.get("status", TaskStatus.NEW.value)
 
     if status not in [s.value for s in TaskStatus]:
-        raise HTTPException(status_code=400, detail="Invalid status")
+        raise HTTPException(400, "Invalid status")
 
-    # Handle assignees
     assignee_ids = payload.get("assignees", [])
 
+    # Validate assignees → MUST be project members
     if assignee_ids:
-        users = db.query(User).filter(User.id.in_(assignee_ids)).all()
-
-        if len(users) != len(assignee_ids):
-            raise HTTPException(status_code=404, detail="Invalid users")
-
-        # Ensure assignees are project members
-        existing_members = (
+        members = (
             db.query(ProjectMember)
             .filter(
                 ProjectMember.project_id == project_id,
@@ -76,16 +65,13 @@ def create_task(
             .all()
         )
 
-        existing_ids = {m.user_id for m in existing_members}
+        member_ids = {m.user_id for m in members}
 
         for user_id in assignee_ids:
-            if user_id not in existing_ids:
-                db.add(
-                    ProjectMember(
-                        project_id=project_id,
-                        user_id=user_id,
-                        role="Member",
-                    )
+            if user_id not in member_ids:
+                raise HTTPException(
+                    400,
+                    "Assignee must be a project member",
                 )
 
     task = Task(
@@ -101,6 +87,7 @@ def create_task(
     db.commit()
     db.refresh(task)
 
+    # Add assignees
     for user_id in assignee_ids:
         db.add(TaskAssignee(task_id=task.id, user_id=user_id))
 
@@ -119,27 +106,48 @@ def update_task(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     task = db.query(Task).filter(Task.id == task_id).first()
 
     if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(404, "Task not found")
 
-    # READ-ONLY USER LOGIC
-    if is_read_only(current_user):
-        if "status" not in payload or payload["status"] != TaskStatus.COMPLETED.value:
+    # =========================
+    # READ-ONLY USER
+    # =========================
+    if current_user.role.name == "Read-Only":
+
+        # Must be assigned
+        assignment = (
+            db.query(TaskAssignee)
+            .filter(
+                TaskAssignee.task_id == task_id,
+                TaskAssignee.user_id == current_user.id,
+            )
+            .first()
+        )
+
+        if not assignment:
             raise HTTPException(
-                status_code=403,
-                detail="Read-only user can only mark task as completed",
+                403,
+                "You can only update your assigned tasks",
             )
 
-        can_update_task_status(current_user, task)
-        task.status = TaskStatus.COMPLETED.value
+        # Only allow DONE
+        if payload.get("status") != TaskStatus.DONE.value:
+            raise HTTPException(
+                403,
+                "Read-only user can only mark task as DONE",
+            )
+
+        task.status = TaskStatus.DONE.value
         db.commit()
         db.refresh(task)
+
         return task
 
-    # NORMAL AUTH
+    # =========================
+    # ADMIN / CREATOR
+    # =========================
     can_modify_task(current_user, task)
 
     if "title" in payload:
@@ -150,35 +158,53 @@ def update_task(
 
     if "status" in payload:
         if payload["status"] not in [s.value for s in TaskStatus]:
-            raise HTTPException(status_code=400, detail="Invalid status")
+            raise HTTPException(400, "Invalid status")
 
         task.status = payload["status"]
 
-    db.commit()
-
-    # Update assignees
+    # =========================
+    # UPDATE ASSIGNEES
+    # =========================
     if "assignees" in payload:
+        assignee_ids = payload["assignees"]
+
+        members = (
+            db.query(ProjectMember)
+            .filter(
+                ProjectMember.project_id == task.project_id,
+                ProjectMember.user_id.in_(assignee_ids),
+            )
+            .all()
+        )
+
+        member_ids = {m.user_id for m in members}
+
+        for user_id in assignee_ids:
+            if user_id not in member_ids:
+                raise HTTPException(
+                    400,
+                    "Assignee must be project member",
+                )
+
         db.query(TaskAssignee).filter(TaskAssignee.task_id == task_id).delete()
 
-        for user_id in payload["assignees"]:
+        for user_id in assignee_ids:
             db.add(TaskAssignee(task_id=task_id, user_id=user_id))
 
-        db.commit()
-
+    db.commit()
     db.refresh(task)
 
     return task
 
 
 # ==========================================================
-# MY TASKS
+# GET MY TASKS
 # ==========================================================
 @router.get("/my")
 def get_my_tasks(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     tasks = (
         db.query(Task)
         .join(TaskAssignee)
@@ -207,13 +233,11 @@ def delete_task(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     task = db.query(Task).filter(Task.id == task_id).first()
 
     if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(404, "Task not found")
 
-    # STRICT AUTH (not just membership anymore)
     can_modify_task(current_user, task)
 
     db.query(TaskAssignee).filter(TaskAssignee.task_id == task_id).delete()

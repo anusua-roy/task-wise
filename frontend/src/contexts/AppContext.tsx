@@ -40,8 +40,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const reloadUsers = async () => {
     if (!user) return;
-    const data = await usersApi.getUsers();
-    setUsers(data);
+
+    try {
+      let data;
+
+      if (user.role === "Admin") {
+        data = await usersApi.getUsers(); // full data
+      } else {
+        data = await usersApi.getUsersLookup(); // limited data
+      }
+
+      setUsers(data);
+    } catch (error) {
+      console.error("Failed to load users", error);
+      setUsers([]);
+    }
   };
 
   const reloadProjects = async () => {

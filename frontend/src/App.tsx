@@ -3,6 +3,7 @@ import { Toaster, toast } from "react-hot-toast";
 import "./styles/theme.css";
 import { checkHealth } from "./api/health.service";
 import AppRoutes from "./routes";
+import { getSession, clearSession } from "./utils/session";
 
 export default function App() {
   useEffect(() => {
@@ -10,16 +11,17 @@ export default function App() {
   }, []);
 
  useEffect(() => {
-   const userData = JSON.parse(localStorage.getItem("app_user") || "{}");
-   if (!userData?.expiresAt) return;
+   const session = getSession();
+   if (!session?.expiresAt) return;
 
-   const warningTime = 5 * 60 * 1000; // 5 minutes before expiry
+   const warningTime = 5 * 60 * 1000;
+
    const now = Date.now();
-   const timeUntilWarning = userData.expiresAt - now - warningTime;
-   const timeUntilLogout = userData.expiresAt - now;
+   const timeUntilWarning = session.expiresAt - now - warningTime;
+   const timeUntilLogout = session.expiresAt - now;
 
-   // Warning timer
    let warningTimer: number | undefined;
+
    if (timeUntilWarning <= 0) {
      toast("Your session will expire soon!", { duration: 5000 });
    } else {
@@ -28,15 +30,14 @@ export default function App() {
      }, timeUntilWarning);
    }
 
-   // Logout timer
    const logoutTimer = setTimeout(() => {
-     localStorage.removeItem("app_user"); // clear session
-     toast("Your session has expired. Logging out...", { duration: 3000 });
-     window.location.reload(); // or navigate to login page
+     clearSession();
+     toast("Session expired. Logging out...", { duration: 3000 });
+     window.location.reload();
    }, timeUntilLogout);
 
    return () => {
-     clearTimeout(warningTimer);
+     if (warningTimer) clearTimeout(warningTimer);
      clearTimeout(logoutTimer);
    };
  }, []);

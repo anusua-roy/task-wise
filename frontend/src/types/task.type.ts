@@ -17,7 +17,6 @@ export interface TaskPayload {
   title: string;
   project_id?: string;
   description?: string;
-  status: TaskStatus;
+  status: string;
   assignees?: string[] | null;
- 
 }

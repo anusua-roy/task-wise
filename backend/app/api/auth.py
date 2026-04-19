@@ -29,7 +29,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email")
 
-    # 🔥 Create JWT
+    # Create JWT
     access_token = create_access_token(data={"sub": user.id})
 
     return {
@@ -40,5 +40,6 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             "email": user.email,
             "name": user.name,
             "role_id": user.role_id,
+            "role": user.role.name,
         },
     }
