@@ -27,3 +27,9 @@ class UserRead(BaseModel):
     role: RoleRead
 
     model_config = {"from_attributes": True}
+
+
+class UserLookup(BaseModel):
+    id: str
+    name: str
+    email: str

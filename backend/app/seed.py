@@ -7,7 +7,9 @@ from app.models.task import Task, TaskAssignee
 from app.models.project_member import ProjectMember
 from app.core.enums import TaskStatus
 from sqlalchemy import text
+from datetime import datetime, timedelta
 import os
+import random
 
 
 # =========================
@@ -26,6 +28,13 @@ def reset_database():
 
 
 # =========================
+# HELPERS
+# =========================
+def random_date(days_offset):
+    return datetime.utcnow() + timedelta(days=days_offset)
+
+
+# =========================
 # SEED DATA
 # =========================
 def run():
@@ -34,133 +43,163 @@ def run():
     # ---------------------
     # ROLES
     # ---------------------
-    admin_role = Role(name="Admin", description="System administrator")
-    creator_role = Role(name="Task Creator", description="Can manage projects/tasks")
-    readonly_role = Role(name="Read-Only", description="View + complete tasks only")
+    roles = {
+        "admin": Role(name="Admin", description="System administrator"),
+        "creator": Role(name="Task Creator", description="Can manage everything"),
+        "readonly": Role(name="Read-Only", description="View + complete tasks"),
+    }
 
-    db.add_all([admin_role, creator_role, readonly_role])
-    db.commit()
-
-    db.refresh(admin_role)
-    db.refresh(creator_role)
-    db.refresh(readonly_role)
-
-    # ---------------------
-    # USERS
-    # ---------------------
-    admin = User(
-        email="admin@taskwise.com",
-        name="Admin User",
-        role_id=admin_role.id,
-    )
-
-    creator1 = User(
-        email="creator1@taskwise.com",
-        name="Project Owner 1",
-        role_id=creator_role.id,
-    )
-
-    creator2 = User(
-        email="creator2@taskwise.com",
-        name="Project Owner 2",
-        role_id=creator_role.id,
-    )
-
-    readonly = User(
-        email="readonly@taskwise.com",
-        name="Read Only User",
-        role_id=readonly_role.id,
-    )
-
-    db.add_all([admin, creator1, creator2, readonly])
+    db.add_all(roles.values())
     db.commit()
 
     # ---------------------
-    # PROJECT 1 (creator1)
+    # USERS (REALISTIC)
     # ---------------------
-    p1 = Project(
-        name="Website Redesign",
-        description="Revamp company website",
-        created_by_id=creator1.id,
-    )
-    db.add(p1)
-    db.commit()
-    db.refresh(p1)
+    users = [
+        User(name="Anusua Roy", email="anusua@taskwise.com", role_id=roles["admin"].id),
+        User(
+            name="Arjun Mehta", email="arjun@taskwise.com", role_id=roles["creator"].id
+        ),
+        User(
+            name="Priya Sharma", email="priya@taskwise.com", role_id=roles["creator"].id
+        ),
+        User(name="Rahul Das", email="rahul@taskwise.com", role_id=roles["creator"].id),
+        User(
+            name="Sneha Kapoor",
+            email="sneha@taskwise.com",
+            role_id=roles["readonly"].id,
+        ),
+        User(
+            name="Amit Verma", email="amit@taskwise.com", role_id=roles["readonly"].id
+        ),
+        User(
+            name="Neha Singh", email="neha@taskwise.com", role_id=roles["readonly"].id
+        ),
+        User(name="Dev Patel", email="dev@taskwise.com", role_id=roles["creator"].id),
+        User(
+            name="Karan Malhotra",
+            email="karan@taskwise.com",
+            role_id=roles["readonly"].id,
+        ),
+        User(name="Test User", email="test@taskwise.com", role_id=roles["readonly"].id),
+    ]
 
-    db.add_all(
-        [
-            ProjectMember(project_id=p1.id, user_id=creator1.id, role="Owner"),
-            ProjectMember(project_id=p1.id, user_id=creator2.id, role="Member"),
-            ProjectMember(project_id=p1.id, user_id=readonly.id, role="Member"),
-        ]
-    )
-    db.commit()
-
-    # TASKS (P1)
-    t1 = Task(
-        title="Design landing page",
-        description="Create wireframes",
-        status=TaskStatus.NEW.value,
-        project_id=p1.id,
-        created_by_id=creator1.id,
-    )
-
-    t2 = Task(
-        title="Implement hero section",
-        description="Frontend work",
-        status=TaskStatus.IN_PROGRESS.value,
-        project_id=p1.id,
-        created_by_id=creator1.id,
-    )
-
-    db.add_all([t1, t2])
+    db.add_all(users)
     db.commit()
 
-    db.add_all(
-        [
-            TaskAssignee(task_id=t1.id, user_id=readonly.id),
-            TaskAssignee(task_id=t2.id, user_id=creator2.id),
-        ]
-    )
-    db.commit()
+    # Helper maps
+    creators = [u for u in users if u.role_id == roles["creator"].id]
 
     # ---------------------
-    # PROJECT 2 (creator2)
+    # PROJECTS
     # ---------------------
-    p2 = Project(
-        name="Mobile App Launch",
-        description="Launch mobile app",
-        created_by_id=creator2.id,
-    )
-    db.add(p2)
-    db.commit()
-    db.refresh(p2)
+    projects = [
+        Project(
+            name="Website Redesign",
+            description="Revamp UI + performance optimization",
+            created_by_id=creators[0].id,
+        ),
+        Project(
+            name="Mobile App Launch",
+            description="iOS + Android rollout",
+            created_by_id=creators[1].id,
+        ),
+        Project(
+            name="Internal Dashboard",
+            description="Analytics + BI dashboards",
+            created_by_id=creators[2].id,
+        ),
+        Project(
+            name="Edge Case Project",
+            description="Minimal members project",
+            created_by_id=creators[0].id,
+        ),
+    ]
 
-    db.add_all(
-        [
-            ProjectMember(project_id=p2.id, user_id=creator2.id, role="Owner"),
-            ProjectMember(project_id=p2.id, user_id=creator1.id, role="Member"),
-            ProjectMember(project_id=p2.id, user_id=readonly.id, role="Member"),
-        ]
-    )
-    db.commit()
-
-    t3 = Task(
-        title="API contracts",
-        description="Define backend APIs",
-        status=TaskStatus.NEW.value,
-        project_id=p2.id,
-        created_by_id=creator2.id,
-    )
-
-    db.add(t3)
+    db.add_all(projects)
     db.commit()
 
-    db.add(TaskAssignee(task_id=t3.id, user_id=readonly.id))
+    # ---------------------
+    # PROJECT MEMBERS
+    # ---------------------
+    for p in projects:
+        # owner
+        db.add(ProjectMember(project_id=p.id, user_id=p.created_by_id, role="Owner"))
+
+        # random members
+        for u in random.sample(users, k=3):
+            if u.id != p.created_by_id:
+                db.add(ProjectMember(project_id=p.id, user_id=u.id, role="Member"))
+
+    db.commit()
+
+    # ---------------------
+    # TASKS (REALISTIC + EDGE CASES)
+    # ---------------------
+    statuses = [
+        TaskStatus.NEW.value,
+        TaskStatus.IN_PROGRESS.value,
+        TaskStatus.BLOCKED.value,
+        TaskStatus.DONE.value,
+    ]
+
+    task_titles = [
+        "Setup CI/CD",
+        "Fix login bug",
+        "Improve performance",
+        "Refactor API",
+        "Write unit tests",
+        "Optimize bundle size",
+        "Add analytics tracking",
+        "Implement RBAC",
+        "Fix mobile UI issues",
+        "Database migration",
+    ]
+
+    all_tasks = []
+
+    for p in projects:
+        for i in range(8):  # ~32 tasks total
+            status = random.choice(statuses)
+
+            task = Task(
+                title=random.choice(task_titles),
+                description=f"Task {i} for {p.name}",
+                status=status,
+                project_id=p.id,
+                created_by_id=p.created_by_id,
+                due_date=random.choice(
+                    [
+                        random_date(-5),  # overdue
+                        random_date(0),  # today
+                        random_date(5),  # future
+                        None,  # edge case: no due date
+                    ]
+                ),
+            )
+
+            db.add(task)
+            db.flush()
+
+            # ASSIGNEES (EDGE CASES)
+            assign_type = random.choice(["none", "single", "multiple"])
+
+            if assign_type == "single":
+                user = random.choice(users)
+                db.add(TaskAssignee(task_id=task.id, user_id=user.id))
+
+            elif assign_type == "multiple":
+                for u in random.sample(users, k=2):
+                    db.add(TaskAssignee(task_id=task.id, user_id=u.id))
+
+            # none = unassigned
+
+            all_tasks.append(task)
+
     db.commit()
 
     db.close()
-    print("Database seeded successfully.")
+    print("🔥 Database seeded with realistic + edge-case data.")
 
 
 # =========================

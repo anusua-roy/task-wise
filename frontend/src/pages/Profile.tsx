@@ -39,7 +39,7 @@ export default function Profile() {
             <div className="text-sm text-[color:var(--muted)]">
               Logged in as
             </div>
-            <div className="font-medium">{user?.role.name ?? "—"}</div>
+            <div className="font-medium">{(user as any)?.role?.name ?? "—"}</div>
           </div>
           <div className="mb-3 w-fit text-white bg-red-600 rounded-lg">
             <button className="py-1 px-2" onClick={handleSignOut}>

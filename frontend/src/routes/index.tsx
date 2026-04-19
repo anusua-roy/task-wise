@@ -12,6 +12,7 @@ import UserManagement from "../pages/UserManagement";
 import Settings from "../pages/Settings";
 import Profile from "../pages/Profile";
 import { PAGE_LOADING } from "../constants/App.constants";
+import { isAdmin } from "../utils/common";
 
 function ProtectedRoute({
   user,
@@ -64,7 +65,7 @@ export default function AppRoutes() {
         <Route path={ROUTE_NAMES.PROJECTS} element={<Projects />} />
         <Route path={ROUTE_NAMES.PROJECT(":id")} element={<ProjectDetail />} />
         <Route path={ROUTE_NAMES.TASKS} element={<MyTasksPage />} />
-        {user?.role.name === "Admin" && (
+        {isAdmin(user) && (
           <Route path={ROUTE_NAMES.USERS} element={<UserManagement />} />
         )}
         {/* <Route path={ROUTE_NAMES.SETTINGS} element={<Settings />} /> */}

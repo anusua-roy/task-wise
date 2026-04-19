@@ -1,9 +1,9 @@
-export type Role = "Admin" | "User";
+export type Role = "Admin" | "Task-Creator" | "Read-Only";
 export type User = {
   id: string;
   name: string;
   email: string;
-  role: { name: Role };
+  role?: string;
 };
 export type UserFormType = {
   id: string;

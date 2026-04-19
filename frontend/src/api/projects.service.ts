@@ -5,7 +5,11 @@ export function getProjects() {
   return http<IProject[]>("/api/projects/");
 }
 
-export function createProject(data: { name: string; description?: string }) {
+export function createProject(data: {
+  name: string;
+  description?: string;
+  member_ids: string[];
+}) {
   return http<IProject>("/api/projects/", {
     method: "POST",
     body: JSON.stringify(data),
@@ -25,3 +29,20 @@ export function updateProject(
     body: JSON.stringify(data),
   });
 }
+
+export function deleteProject(id: string) {
+  return http(`/api/projects/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export const addProjectMember = (projectId: string, user_id: string) =>
+  http(`/api/projects/${projectId}/members`, {
+    method: "POST",
+    body: JSON.stringify({ user_id }),
+  });
+
+export const removeProjectMember = (projectId: string, userId: string) =>
+  http(`/api/projects/${projectId}/members/${userId}`, {
+    method: "DELETE",
+  });

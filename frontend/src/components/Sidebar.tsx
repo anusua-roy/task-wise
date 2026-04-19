@@ -4,12 +4,13 @@ import { FaTasks } from "react-icons/fa";
 import { useAuth } from "../contexts/AuthContext";
 import { ROUTE_NAMES } from "../routes/constants";
 import { PROJECT_NAME, SIDEBAR_OPTIONS } from "../constants/App.constants";
+import { isAdmin } from "../utils/common";
 
 export default function Sidebar() {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const options = Object.entries(SIDEBAR_OPTIONS).filter(([key, value]) => {
-    if (user?.role.name === "Admin") return true;
+    if (isAdmin(user)) return true;
     else return value !== SIDEBAR_OPTIONS.USERS;
   });
   const linkClass = (path: string) =>

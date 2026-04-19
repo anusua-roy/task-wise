@@ -73,7 +73,7 @@ export const FORM_LABEL = {
   CREATED_BY: "Created By",
 };
 
-export const TITLES = { MY_TASKS: "My Tasks" };
+export const TITLES = { MY_TASKS: "Assigned to Me" };
 
 export const PLACEHOLDERS = {
   SEARCH_PROJECT: "Search Projects",

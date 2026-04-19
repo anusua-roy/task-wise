@@ -1,16 +1,17 @@
 import { API_BASE_URL } from "../constants/Api.constants";
 
-export async function login(email: string) {
+export const login = async (email: string) => {
   const res = await fetch(`${API_BASE_URL}/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({ email }),
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(error.detail || "Invalid email");
+    throw new Error("Login failed");
   }
 
-  return res.json();
-}
+  return res.json(); // returns { access_token, user }
+};

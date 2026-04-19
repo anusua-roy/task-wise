@@ -2,7 +2,7 @@ import { User } from "../types/user.type";
 import { http } from "./http";
 
 export function getUsers() {
-  return http<User[]>("/api/users/");
+  return http<any[]>("/api/users/");
 }
 
 export const createUser = (data: any) =>
@@ -21,3 +21,7 @@ export const deleteUser = (id: string) =>
   http(`/api/users/${id}`, {
     method: "DELETE",
   });
+
+export const getUsersLookup = async () => {
+  return http<User[]>("/api/users/lookup");
+};

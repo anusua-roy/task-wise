@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Breadcrumbs from "../components/Breadcrumbs";
 import { ROUTE_NAMES } from "../routes/constants";
 import {
@@ -8,31 +8,46 @@ import {
   EMPTY_STRING,
   ERR_MSG,
   FORM_LABEL,
-  OTHERS,
   SIDEBAR_OPTIONS,
   TASK_STATUS,
 } from "../constants/App.constants";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { getProjectById, updateProject } from "../api/projects.service";
+import {
+  getProjectById,
+  updateProject,
+  deleteProject,
+  addProjectMember,
+  removeProjectMember,
+} from "../api/projects.service";
+import { getUsersLookup } from "../api/users.service";
 import { createTask } from "../api/tasks.service";
 import toast from "react-hot-toast";
 import { PROJECT_DETAIL_QUERY } from "../constants/Query.constants";
 import TaskGrid from "../components/TaskGrid";
 import { useAuth } from "../contexts/AuthContext";
 import { TaskStatus } from "../types/task.type";
-import { useAppContext } from "../contexts/AppContext";
+import { isAdmin, canCreateTask } from "../utils/common";
 
 export default function ProjectDetail() {
   const { user } = useAuth();
-  const { users } = useAppContext();
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
   const [isEditing, setIsEditing] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
+
+  const [showMemberModal, setShowMemberModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState("");
+
+  const [removeMemberId, setRemoveMemberId] = useState<string | null>(null);
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+
+  const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
 
   const [draft, setDraft] = useState({
     name: EMPTY_STRING,
     description: EMPTY_STRING,
   });
+
   const [taskDraft, setTaskDraft] = useState({
     title: EMPTY_STRING,
     description: EMPTY_STRING,
@@ -41,48 +56,9 @@ export default function ProjectDetail() {
 
   const queryClient = useQueryClient();
 
-  const createTaskMutation = useMutation({
-    mutationFn: createTask,
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [PROJECT_DETAIL_QUERY, id],
-      });
-
-      toast.success("Task created successfully");
-
-      setShowTaskForm(false);
-
-      setTaskDraft({
-        title: EMPTY_STRING,
-        description: EMPTY_STRING,
-        assignees: EMPTY_STRING,
-      });
-    },
-
-    onError: (err: any) => {
-      toast.error(err?.message || "Failed to create task");
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (data: { name: string; description?: string }) =>
-      updateProject(id!, data),
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [PROJECT_DETAIL_QUERY, id],
-      });
-
-      toast.success("Project updated successfully");
-      setIsEditing(false);
-    },
-
-    onError: (err: any) => {
-      toast.error(err?.message || "Failed to update project");
-    },
-  });
-
+  // =========================
+  // FETCH PROJECT
+  // =========================
   const {
     data: project,
     isLoading,
@@ -93,36 +69,64 @@ export default function ProjectDetail() {
     enabled: !!id,
   });
 
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ["users-lookup"],
+    queryFn: getUsersLookup,
+  });
+
   const tasks = project?.tasks ?? [];
+  const members = project?.members ?? [];
 
-  const progress = useMemo(() => {
-    const total = tasks.length;
-    if (total === 0) return 0;
-
-    const completed = tasks.filter(
-      (t: any) => t.status === TASK_STATUS.DONE,
-    ).length;
-
-    return Math.round((completed / total) * 100);
-  }, [tasks]);
-
-  if (isLoading) return <div>Loading project...</div>;
-  if (error instanceof Error) return <div>Error: {error.message}</div>;
-  if (!project)
-    return <div className="text-muted">{ERR_MSG.PROJECT_NOT_FOUND}</div>;
-
+  // =========================
+  // EDIT HANDLERS
+  // =========================
   const startEdit = () => {
     setDraft({
-      name: project.name || EMPTY_STRING,
-      description: project.description || EMPTY_STRING,
+      name: project?.name || EMPTY_STRING,
+      description: project?.description || EMPTY_STRING,
     });
-
     setIsEditing(true);
   };
 
-  const cancelEdit = () => {
-    setIsEditing(false);
-  };
+  const cancelEdit = () => setIsEditing(false);
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string }) =>
+      updateProject(id!, data),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [PROJECT_DETAIL_QUERY, id],
+      });
+      toast.success("Project updated");
+      setIsEditing(false);
+    },
+  });
+
+  const addMemberMutation = useMutation({
+    mutationFn: (userId: string) => addProjectMember(id!, userId),
+    onSuccess: () => {
+      toast.success("Member added");
+      queryClient.invalidateQueries({
+        queryKey: [PROJECT_DETAIL_QUERY, id],
+      });
+      setShowMemberModal(false);
+      setSelectedUser("");
+    },
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: (userId: string) => removeProjectMember(id!, userId),
+    onSuccess: () => {
+      toast.success("Member removed");
+      queryClient.invalidateQueries({
+        queryKey: [PROJECT_DETAIL_QUERY, id],
+      });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Cannot remove member");
+    },
+  });
 
   const saveEdit = () => {
     updateMutation.mutate({
@@ -130,6 +134,36 @@ export default function ProjectDetail() {
       description: draft.description,
     });
   };
+
+  // =========================
+  // DELETE
+  // =========================
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteProject(id!),
+    onSuccess: () => {
+      toast.success("Project deleted");
+      navigate(ROUTE_NAMES.PROJECTS);
+    },
+  });
+
+  // =========================
+  // CREATE TASK
+  // =========================
+  const createTaskMutation = useMutation({
+    mutationFn: createTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [PROJECT_DETAIL_QUERY, id],
+      });
+      toast.success("Task created");
+      setShowTaskForm(false);
+      setTaskDraft({
+        title: EMPTY_STRING,
+        description: EMPTY_STRING,
+        assignees: EMPTY_STRING,
+      });
+    },
+  });
 
   const handleCreateTask = () => {
     createTaskMutation.mutate({
@@ -141,31 +175,43 @@ export default function ProjectDetail() {
     });
   };
 
+  // =========================
+  // PROGRESS
+  // =========================
+  const progress = useMemo(() => {
+    if (!tasks.length) return 0;
+    const done = tasks.filter((t: any) => t.status === TASK_STATUS.DONE).length;
+    return Math.round((done / tasks.length) * 100);
+  }, [tasks]);
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error instanceof Error) return <div>{error.message}</div>;
+  if (!project) return <div>{ERR_MSG.PROJECT_NOT_FOUND}</div>;
+
+  const canEdit = isAdmin(user) || project?.created_by?.id === user?.id;
+
   return (
     <div>
       <Breadcrumbs
         items={[
           { label: SIDEBAR_OPTIONS.PROJECTS, href: ROUTE_NAMES.PROJECTS },
-          { label: project.name ?? EMPTY_STRING },
+          { label: project.name as string },
         ]}
       />
 
-      {/* ================= PROJECT HEADER ================= */}
-      <section className="mt-4 bg-white border border-gray-200 rounded-lg p-6 flex justify-between gap-8">
-        {/* LEFT */}
-        <div className="flex flex-col gap-3 max-w-xl">
+      {/* HEADER */}
+      <section className="mt-4 bg-white border rounded-lg p-6 flex justify-between">
+        <div className="max-w-xl">
           {isEditing ? (
             <input
               value={draft.name}
               onChange={(e) =>
                 setDraft((p) => ({ ...p, name: e.target.value }))
               }
-              className="text-2xl font-semibold border border-gray-300 rounded-md px-2 py-1 w-full"
+              className="text-2xl border px-2 py-1 w-full"
             />
           ) : (
-            <h2 className="text-2xl font-semibold text-gray-900">
-              {project.name}
-            </h2>
+            <h2 className="text-2xl font-semibold">{project.name}</h2>
           )}
 
           {isEditing ? (
@@ -174,162 +220,271 @@ export default function ProjectDetail() {
               onChange={(e) =>
                 setDraft((p) => ({ ...p, description: e.target.value }))
               }
-              className="border border-gray-300 rounded-md px-2 py-1 w-full"
+              className="mt-2 border px-2 py-1 w-full"
             />
           ) : (
-            <p className="text-gray-600">{project.description}</p>
+            <p className="text-gray-600 mt-2">{project.description}</p>
           )}
 
-          {/* Metadata */}
-          <div className="text-sm text-gray-500 flex gap-6 mt-2">
-            <span>
-              {FORM_LABEL.CREATED_BY}{" "}
-              <span className="font-medium text-gray-700">
-                {project.created_by?.name}
-              </span>
-            </span>
-
-            <span>
-              {FORM_LABEL.CREATED_ON}{" "}
-              <span className="font-medium text-gray-700">
-                {new Date(
-                  project?.created_at ?? EMPTY_STRING,
-                ).toLocaleDateString()}
-              </span>
-            </span>
+          <div className="text-sm text-gray-500 mt-2">
+            Members: {members.length}
+            {canEdit && (
+              <button
+                onClick={() => setShowMemberModal(true)}
+                className="ml-3 text-xs text-orange-600 hover:underline"
+              >
+                Manage
+              </button>
+            )}
           </div>
 
-          {/* Progress */}
-          <div className="mt-4">
-            <div className="flex justify-between text-sm text-gray-600 mb-1">
-              <span>{OTHERS.PROGRESS}</span>
-              <span className="font-medium">{progress}%</span>
-            </div>
-
-            <div className="w-64 bg-gray-100 h-2 rounded-full overflow-hidden">
+          <div className="mt-2 flex flex-wrap gap-2">
+            {members.map((m: any) => (
               <div
-                className="h-full bg-orange-600 transition-all"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+                key={m.id}
+                className="flex items-center gap-2 px-2 py-1 bg-gray-100 rounded text-sm"
+              >
+                {m.name}
+
+                {canEdit && (
+                  <button
+                    onClick={() => {
+                      setRemoveMemberId(m.id);
+                      setShowRemoveModal(true);
+                    }}
+                    className="text-red-500 text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
+
+          <div className="mt-3 text-sm">Progress: {progress}%</div>
         </div>
 
-        {/* RIGHT ACTIONS */}
+        {/* ACTIONS */}
         <div className="flex items-start gap-3">
           {isEditing ? (
             <>
               <button
                 onClick={saveEdit}
-                disabled={updateMutation.isPending}
-                className="px-4 py-2 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-60"
+                className="px-4 py-2 bg-green-600 text-white rounded"
               >
-                {updateMutation.isPending ? OTHERS.SAVING : BUTTON_NAMES.SAVE}
+                Save
               </button>
-
-              <button
-                onClick={cancelEdit}
-                className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50"
-              >
-                {BUTTON_NAMES.CANCEL}
+              <button onClick={cancelEdit} className="px-4 py-2 border rounded">
+                Cancel
               </button>
             </>
           ) : (
-            <>
-              {project.created_by?.id === user?.id && (
+            canEdit && (
+              <>
                 <button
                   onClick={startEdit}
                   className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50"
                 >
                   {BUTTON_NAMES.EDIT_PROJECT}
                 </button>
-              )}
 
-              <button
-                onClick={() => setShowTaskForm(true)}
-                className="px-4 py-2 text-sm rounded-lg bg-orange-600 text-white hover:bg-orange-700"
-              >
-                {BUTTON_NAMES.ADD_TASK}
-              </button>
-            </>
+                <button
+                  onClick={() => setShowDeleteProjectModal(true)}
+                  className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              </>
+            )
+          )}
+
+          {canCreateTask(user) && (
+            <button
+              onClick={() => setShowTaskForm(true)}
+              className="px-4 py-2 text-sm rounded-lg bg-orange-600 text-white hover:bg-orange-700"
+            >
+              Add Task
+            </button>
           )}
         </div>
       </section>
 
-      {/* ================= TASK LIST ================= */}
-      <section className="mt-6 bg-card border border-border rounded-lg">
-        {tasks.length === 0 ? (
-          <div className="p-6 text-muted">{ERR_MSG.NO_TASKS}</div>
-        ) : (
-          <TaskGrid filteredTasks={tasks} showAssignee={true} projectId={id} />
-        )}
+      {/* TASKS */}
+      <section className="mt-6">
+        <TaskGrid
+          filteredTasks={tasks}
+          showAssignee={true}
+          projectId={id}
+          members={members}
+        />
       </section>
 
+      {/* CREATE TASK MODAL */}
       {showTaskForm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-5 flex flex-col gap-3">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40">
+          <div className="bg-white p-5 rounded w-full max-w-md">
             <h2 className="text-lg font-semibold">Create Task</h2>
 
-            <div>
-              <label className="block text-sm">{FORM_LABEL.TITLE}</label>
-              <input
-                value={taskDraft.title}
-                onChange={(e) =>
-                  setTaskDraft((p) => ({ ...p, title: e.target.value }))
-                }
-                className="mt-1 w-full border rounded px-3 py-2 text-sm"
-              />
-            </div>
+            <input
+              value={taskDraft.title}
+              onChange={(e) =>
+                setTaskDraft((p) => ({ ...p, title: e.target.value }))
+              }
+              className="border p-2 w-full mt-2"
+            />
 
-            <div>
-              <label className="block text-sm">{FORM_LABEL.DESCRIPTION}</label>
-              <textarea
-                value={taskDraft.description}
-                onChange={(e) =>
-                  setTaskDraft((p) => ({ ...p, description: e.target.value }))
-                }
-                className="mt-1 w-full border rounded px-3 py-2 text-sm"
-              />
-            </div>
+            <textarea
+              value={taskDraft.description}
+              onChange={(e) =>
+                setTaskDraft((p) => ({ ...p, description: e.target.value }))
+              }
+              className="border p-2 w-full mt-2"
+            />
 
-            <div>
-              <label className="block text-sm">Assign To</label>
+            <select
+              value={taskDraft.assignees}
+              onChange={(e) =>
+                setTaskDraft((p) => ({
+                  ...p,
+                  assignees: e.target.value,
+                }))
+              }
+              className="border p-2 w-full mt-2"
+            >
+              <option value="">Unassigned</option>
+              {members.map((m: any) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
 
-              <select
-                value={taskDraft.assignees}
-                onChange={(e) =>
-                  setTaskDraft((p) => ({
-                    ...p,
-                    assignees: e.target.value,
-                  }))
-                }
-                className="mt-1 w-full border rounded px-3 py-2 text-sm"
-              >
-                <option value={EMPTY_STRING}>Unassigned</option>
-                {users?.map((member: any) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex justify-end gap-2 mt-3">
+            <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setShowTaskForm(false)}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                className="px-4 py-2 bg-gray-200 rounded"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleCreateTask}
+                className="px-4 py-2 bg-orange-600 text-white rounded"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMemberModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40">
+          <div className="bg-white p-5 rounded w-full max-w-md">
+            <h2 className="text-lg font-semibold">Add Member</h2>
+
+            <select
+              value={selectedUser}
+              onChange={(e) => setSelectedUser(e.target.value)}
+              className="border p-2 w-full mt-3"
+            >
+              <option value="">Select user</option>
+
+              {allUsers
+                .filter((u: any) => !members.some((m: any) => m.id === u.id))
+                .map((u: any) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+            </select>
+
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setShowMemberModal(false)}
+                className="px-4 py-2 bg-gray-200 rounded"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() => addMemberMutation.mutate(selectedUser)}
+                disabled={!selectedUser}
+                className="px-4 py-2 bg-orange-600 text-white rounded disabled:opacity-50"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRemoveModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-5">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Remove Member
+            </h3>
+
+            <p className="text-sm text-gray-600 mt-2">
+              Are you sure you want to remove this member? Active tasks must be
+              reassigned first.
+            </p>
+
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                onClick={() => {
+                  setShowRemoveModal(false);
+                  setRemoveMemberId(null);
+                }}
+                className="px-4 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50"
               >
                 {BUTTON_NAMES.CANCEL}
               </button>
 
               <button
-                onClick={handleCreateTask}
-                disabled={createTaskMutation.isPending}
-                className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-60"
+                onClick={() => {
+                  if (removeMemberId) {
+                    removeMemberMutation.mutate(removeMemberId);
+                  }
+                  setShowRemoveModal(false);
+                  setRemoveMemberId(null);
+                }}
+                className="px-4 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700"
               >
-                {createTaskMutation.isPending
-                  ? OTHERS.CREATING
-                  : BUTTON_NAMES.CREATE}
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDeleteProjectModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-5">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Delete Project
+            </h3>
+
+            <p className="text-sm text-gray-600 mt-2">
+              This will permanently delete the project and all tasks.
+            </p>
+
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                onClick={() => setShowDeleteProjectModal(false)}
+                className="px-4 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50"
+              >
+                {BUTTON_NAMES.CANCEL}
+              </button>
+
+              <button
+                onClick={() => {
+                  deleteMutation.mutate();
+                  setShowDeleteProjectModal(false);
+                }}
+                className="px-4 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700"
+              >
+                {BUTTON_NAMES.DELETE}
               </button>
             </div>
           </div>
