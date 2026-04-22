@@ -101,6 +101,10 @@ export default function ProjectDetail() {
       toast.success("Project updated");
       setIsEditing(false);
     },
+
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to update project");
+    },
   });
 
   const addMemberMutation = useMutation({

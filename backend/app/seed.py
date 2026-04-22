@@ -53,7 +53,7 @@ def run():
     db.commit()
 
     # ---------------------
-    # USERS (REALISTIC)
+    # USERS
     # ---------------------
     users = [
         User(name="Anusua Roy", email="anusua@taskwise.com", role_id=roles["admin"].id),
@@ -81,13 +81,11 @@ def run():
             email="karan@taskwise.com",
             role_id=roles["readonly"].id,
         ),
-        User(name="Test User", email="test@taskwise.com", role_id=roles["readonly"].id),
     ]
 
     db.add_all(users)
     db.commit()
 
-    # Helper maps
     creators = [u for u in users if u.role_id == roles["creator"].id]
 
     # ---------------------
@@ -109,11 +107,6 @@ def run():
             description="Analytics + BI dashboards",
             created_by_id=creators[2].id,
         ),
-        Project(
-            name="Edge Case Project",
-            description="Minimal members project",
-            created_by_id=creators[0].id,
-        ),
     ]
 
     db.add_all(projects)
@@ -122,19 +115,28 @@ def run():
     # ---------------------
     # PROJECT MEMBERS
     # ---------------------
+    project_members_map = {}
+
     for p in projects:
+        members = []
+
         # owner
         db.add(ProjectMember(project_id=p.id, user_id=p.created_by_id, role="Owner"))
+        members.append(p.created_by_id)
 
-        # random members
-        for u in random.sample(users, k=3):
+        # random additional members
+        extra_members = random.sample(users, k=3)
+        for u in extra_members:
             if u.id != p.created_by_id:
                 db.add(ProjectMember(project_id=p.id, user_id=u.id, role="Member"))
+                members.append(u.id)
+
+        project_members_map[p.id] = list(set(members))  # unique
 
     db.commit()
 
     # ---------------------
-    # TASKS (REALISTIC + EDGE CASES)
+    # TASKS (FIXED ASSIGNEES)
     # ---------------------
     statuses = [
         TaskStatus.NEW.value,
@@ -156,10 +158,10 @@ def run():
         "Database migration",
     ]
 
-    all_tasks = []
-
     for p in projects:
-        for i in range(8):  # ~32 tasks total
+        project_member_ids = project_members_map[p.id]
+
+        for i in range(8):
             status = random.choice(statuses)
 
             task = Task(
@@ -170,10 +172,10 @@ def run():
                 created_by_id=p.created_by_id,
                 due_date=random.choice(
                     [
-                        random_date(-5),  # overdue
-                        random_date(0),  # today
-                        random_date(5),  # future
-                        None,  # edge case: no due date
+                        random_date(-5),
+                        random_date(0),
+                        random_date(5),
+                        None,
                     ]
                 ),
             )
@@ -181,25 +183,28 @@ def run():
             db.add(task)
             db.flush()
 
-            # ASSIGNEES (EDGE CASES)
+            # ---------------------
+            # ASSIGN ONLY PROJECT MEMBERS
+            # ---------------------
             assign_type = random.choice(["none", "single", "multiple"])
 
             if assign_type == "single":
-                user = random.choice(users)
-                db.add(TaskAssignee(task_id=task.id, user_id=user.id))
+                user_id = random.choice(project_member_ids)
+                db.add(TaskAssignee(task_id=task.id, user_id=user_id))
 
             elif assign_type == "multiple":
-                for u in random.sample(users, k=2):
-                    db.add(TaskAssignee(task_id=task.id, user_id=u.id))
+                selected = random.sample(
+                    project_member_ids, k=min(2, len(project_member_ids))
+                )
+                for uid in selected:
+                    db.add(TaskAssignee(task_id=task.id, user_id=uid))
 
-            # none = unassigned
-
-            all_tasks.append(task)
+            # none = unassigned (valid case)
 
     db.commit()
-
     db.close()
-    print("🔥 Database seeded with realistic + edge-case data.")
+
+    print("Database seeded correctly (members-only assignment).")
 
 
 # =========================

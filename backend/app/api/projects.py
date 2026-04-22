@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.project import Project
-from app.schemas.project import CreateProjectRequest
+from app.schemas.project import CreateProjectRequest, UpdateProjectRequest
 from app.models.project_member import ProjectMember
 from app.models.task import Task, TaskAssignee
 from app.models.user import User
@@ -226,6 +226,53 @@ def get_project_detail(
 
 
 # =========================
+# UPDATE PROJECT
+# =========================
+@router.put("/{project_id}")
+def update_project(
+    project_id: str,
+    payload: UpdateProjectRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    project = db.query(Project).filter(Project.id == project_id).first()
+
+    if not project:
+        raise HTTPException(404, "Project not found")
+
+    membership = (
+        db.query(ProjectMember)
+        .filter(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    # IMPORTANT: permission check
+    can_modify_project(current_user, project, membership)
+
+    # =========================
+    # APPLY UPDATES
+    # =========================
+    if payload.name is not None:
+        project.name = payload.name
+
+    if payload.description is not None:
+        project.description = payload.description
+
+    db.commit()
+    db.refresh(project)
+
+    return {
+        "id": project.id,
+        "name": project.name,
+        "description": project.description,
+        "created_at": project.created_at,
+    }
+
+
+# =========================
 # DELETE PROJECT
 # =========================
 @router.delete("/{project_id}")
@@ -254,6 +301,76 @@ def delete_project(
     db.commit()
 
     return {"message": "Project deleted successfully"}
+
+
+# =========================
+# ADD MEMBER
+# =========================
+@router.post("/{project_id}/members")
+def add_member(
+    project_id: str,
+    payload: dict,  # simple for now: { "user_id": "..." }
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    user_id = payload.get("user_id")
+
+    if not user_id:
+        raise HTTPException(400, "user_id is required")
+
+    project = db.query(Project).filter(Project.id == project_id).first()
+
+    if not project:
+        raise HTTPException(404, "Project not found")
+
+    membership = (
+        db.query(ProjectMember)
+        .filter(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    # 🔥 permission check
+    can_modify_project(current_user, project, membership)
+
+    # ---------------------
+    # VALIDATIONS
+    # ---------------------
+
+    # user must exist
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    # prevent duplicate
+    exists = (
+        db.query(ProjectMember)
+        .filter(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == user_id,
+        )
+        .first()
+    )
+
+    if exists:
+        raise HTTPException(400, "User already a member")
+
+    # ---------------------
+    # ADD MEMBER
+    # ---------------------
+    db.add(
+        ProjectMember(
+            project_id=project_id,
+            user_id=user_id,
+            role="Member",
+        )
+    )
+
+    db.commit()
+
+    return {"message": "Member added successfully"}
 
 
 # =========================

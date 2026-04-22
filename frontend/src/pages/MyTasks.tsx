@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Task } from "../types/task.type";
 import * as tasksApi from "../api/tasks.service";
 import TaskFilters from "../components/TaskFilters";
@@ -9,44 +9,29 @@ import {
   PAGE_LOADING,
   TASK_STATUS,
 } from "../constants/App.constants";
-import toast from "react-hot-toast";
 import TaskGrid from "../components/TaskGrid";
-import { useAuth } from "../contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 
 export default function MyTasksPage() {
-  const { user } = useAuth();
-
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const [query, setQuery] = useState(EMPTY_STRING);
   const [statusFilter, setStatusFilter] = useState<string>("All");
 
-  // =========================
-  // FETCH TASKS
-  // =========================
-  const fetchTasks = async () => {
-    try {
-      setLoading(true);
-      const data = await tasksApi.getMyTasks();
-      setTasks(data);
-    } catch (err: any) {
-      setError(err?.message || ERR_MSG.TASKS_LOAD_FAIL);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTasks();
-  }, []);
+  // React Query (NO stale state issue ever)
+  const {
+    data: tasks = [],
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["my-tasks"],
+    queryFn: tasksApi.getMyTasks,
+  });
 
   // =========================
   // FILTER
   // =========================
   const filtered = useMemo(() => {
-    return tasks.filter((t) => {
+    return tasks.filter((t: Task) => {
       if (statusFilter !== TASK_STATUS.ALL && t.status !== statusFilter)
         return false;
 
@@ -66,53 +51,41 @@ export default function MyTasksPage() {
     setStatusFilter(TASK_STATUS.ALL);
   };
 
-  // =========================
-  // CALLBACK AFTER GRID ACTIONS
-  // =========================
-  const handleTaskChange = () => {
-    // 🔥 ensures consistency with TaskGrid actions
-    fetchTasks();
-  };
-
-  // =========================
-  // RENDER
-  // =========================
   return (
     <div>
-      {/* FILTERS */}
       <div className="flex justify-between items-center mb-3 gap-3">
         <TaskFilters
           query={query}
           setQuery={setQuery}
           status={statusFilter}
           setStatus={setStatusFilter}
-          selectedTag={undefined} // ❌ removed dead tag logic
+          selectedTag={undefined}
           setSelectedTag={() => {}}
           onClear={onClear}
         />
       </div>
 
-      {loading && <p>{PAGE_LOADING}</p>}
+      {isLoading && <p>{PAGE_LOADING}</p>}
 
       {error && (
         <p className="text-red-600" role="alert">
-          {`${ERR_MSG.TASKS_LOADING} ${error}`}
+          {`${ERR_MSG.TASKS_LOADING} ${(error as Error).message}`}
         </p>
       )}
 
-      {!loading && filtered.length === 0 && (
+      {!isLoading && filtered.length === 0 && (
         <div className="p-6 text-center text-gray-600 border border-dashed border-gray-300 rounded">
           {OTHERS.FILTER_CHANGE}
         </div>
       )}
 
-      {/* ================= TASK GRID ================= */}
       <section className="w-full">
         <TaskGrid
           filteredTasks={filtered}
           showAssignee={false}
-          projectId={EMPTY_STRING} // required for consistency
-          members={[]} // not needed here
+          projectId={EMPTY_STRING}
+          members={[]}
+          onTaskUpdated={refetch} // KEY FIX
         />
       </section>
     </div>

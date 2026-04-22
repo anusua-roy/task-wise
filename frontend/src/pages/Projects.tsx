@@ -61,7 +61,7 @@ export default function Projects() {
       setShowForm(false);
       reset();
 
-      // 🔥 RESET EVERYTHING CLEANLY
+      // RESET EVERYTHING CLEANLY
       setSelectedMembers([]);
       setUserSearch("");
 
@@ -107,7 +107,7 @@ export default function Projects() {
     });
 
     setSelectedMembers([]);
-    setUserSearch(""); // 🔥 important
+    setUserSearch(""); // important
     setShowForm(true);
   };
 
