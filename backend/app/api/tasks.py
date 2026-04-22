@@ -165,7 +165,7 @@ def update_task(
     # =========================
     # UPDATE ASSIGNEES
     # =========================
-    if "assignees" in payload:
+    if payload.get("assignees") is not None:
         assignee_ids = payload["assignees"]
 
         members = (

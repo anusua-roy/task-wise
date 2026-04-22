@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  BUTTON_NAMES,
   EMPTY_STRING,
   TASK_STATUS,
   TASK_TABLE,
@@ -20,6 +19,7 @@ interface Props {
   showAssignee?: boolean;
   projectId?: string;
   members?: any[];
+  onTaskUpdated?: () => void;
 }
 
 export default function TaskGrid({
@@ -27,6 +27,7 @@ export default function TaskGrid({
   showAssignee = false,
   projectId = EMPTY_STRING,
   members = [],
+  onTaskUpdated,
 }: Props) {
   const { user } = useAuth();
 
@@ -42,10 +43,8 @@ export default function TaskGrid({
   // =========================
   // PERMISSIONS
   // =========================
-  const canModify = (task: Task) => {
-    if (isAdmin(user)) return true;
-    if (isCreator(user)) return true;
-    return false;
+  const canModify = () => {
+    return isAdmin(user) || isCreator(user);
   };
 
   const canMarkComplete = (task: Task) => {
@@ -79,23 +78,41 @@ export default function TaskGrid({
   const saveEdit = async () => {
     if (!editingId) return;
 
+    const existingTask = filteredTasks.find((t) => t.id === editingId);
+
     try {
-      await updateTask(editingId, {
+      const payload: any = {
         title: draft.title,
         description: draft.description,
         status: draft.status,
-        assignees: draft.assignees ?? [],
-      });
+      };
+
+      /**
+       * CRITICAL FIX
+       *
+       * - If assignees changed → use draft
+       * - If NOT changed → preserve existing
+       */
+      if (draft.assignees !== undefined) {
+        payload.assignees = draft.assignees;
+      } else {
+        payload.assignees = existingTask?.assignees?.map((a) => a.id) || [];
+      }
+
+      await updateTask(editingId, payload);
 
       queryClient.invalidateQueries({
         queryKey: [PROJECT_DETAIL_QUERY, projectId],
       });
 
+      onTaskUpdated?.(); // sync parent (MyTasksPage)
+
       setEditingId(null);
       setDraft({});
       toast.success("Task updated");
-    } catch {
-      toast.error("Failed to update task");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to update task");
     }
   };
 
@@ -112,11 +129,14 @@ export default function TaskGrid({
         queryKey: [PROJECT_DETAIL_QUERY, projectId],
       });
 
+      onTaskUpdated?.();
+
       toast.success("Task deleted");
       setDeleteId(null);
       setShowDeleteConfirm(false);
-    } catch {
-      toast.error("Failed to delete task");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to delete task");
     }
   };
 
@@ -133,9 +153,12 @@ export default function TaskGrid({
         queryKey: [PROJECT_DETAIL_QUERY, projectId],
       });
 
+      onTaskUpdated?.();
+
       toast.success("Task completed");
-    } catch {
-      toast.error("Failed to update task");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to update task");
     }
   };
 
@@ -158,7 +181,6 @@ export default function TaskGrid({
       {filteredTasks.map((task) => {
         const isEditing = editingId === task.id;
 
-        // 🔥 FIX: resolve assignee name from members
         const assigneeId = task.assignees?.[0]?.id;
         const assigneeName = members.find((m) => m.id === assigneeId)?.name;
 
@@ -227,7 +249,6 @@ export default function TaskGrid({
                     }
                   >
                     <option value="">Unassigned</option>
-
                     {members.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.name}
@@ -242,7 +263,6 @@ export default function TaskGrid({
 
             {/* ACTIONS */}
             <div className="flex justify-end gap-2">
-              {/* READ ONLY */}
               {canMarkComplete(task) && task.status !== TASK_STATUS.DONE && (
                 <button
                   onClick={() => handleMarkComplete(task)}
@@ -253,7 +273,7 @@ export default function TaskGrid({
               )}
 
               {/* ADMIN / CREATOR */}
-              {canModify(task) && (
+              {canModify() && (
                 <>
                   {isEditing ? (
                     <>
