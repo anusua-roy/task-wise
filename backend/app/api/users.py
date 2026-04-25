@@ -1,11 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from app.models.user import User
 from app.models.role import Role
 from app.schemas.user import UserCreate, UserRead, UserBase, UserLookup
 from app.core.security import require_role, get_current_user
 from app.api.deps import get_db
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
 
@@ -145,22 +149,62 @@ def delete_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("Admin")),
 ):
-    user = db.query(User).filter(User.id == user_id).first()
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
 
-    if not user:
-        raise HTTPException(404, "User not found")
+        if not user:
+            raise HTTPException(404, "User not found")
 
-    # Prevent deleting self
-    if current_user.id == user_id:
-        raise HTTPException(400, "Cannot delete yourself")
+        # Prevent self delete
+        if current_user.id == user_id:
+            raise HTTPException(400, "Cannot delete yourself")
 
-    # Prevent deleting last admin
-    if user.role.name == "Admin":
-        admin_count = db.query(User).join(Role).filter(Role.name == "Admin").count()
-        if admin_count <= 1:
-            raise HTTPException(400, "At least one admin must exist")
+        # Prevent deleting last admin
+        if user.role.name == "Admin":
+            admin_count = db.query(User).join(Role).filter(Role.name == "Admin").count()
+            if admin_count <= 1:
+                raise HTTPException(400, "At least one admin must exist")
 
-    db.delete(user)
-    db.commit()
+        # HARD CHECK dependencies
+        from app.models.project_member import ProjectMember
+        from app.models.task import TaskAssignee, Task
+        from app.models.project import Project
 
-    return {"message": "User deleted successfully"}
+        if (
+            db.query(Project).filter(Project.created_by_id == user_id).first()
+            or db.query(ProjectMember).filter(ProjectMember.user_id == user_id).first()
+            or db.query(Task).filter(Task.created_by_id == user_id).first()
+            or db.query(TaskAssignee).filter(TaskAssignee.user_id == user_id).first()
+        ):
+            raise HTTPException(
+                400,
+                "User is linked to projects/tasks. Remove dependencies first.",
+            )
+
+        # DELETE
+        db.delete(user)
+        db.commit()
+
+        return {"message": "User deleted successfully"}
+
+    except HTTPException:
+        db.rollback()
+        raise
+
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"IntegrityError while deleting user: {str(e)}")
+
+        raise HTTPException(
+            status_code=400,
+            detail="User is still referenced somewhere (DB constraint).",
+        )
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error deleting user: {str(e)}")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unexpected server error while deleting user",
+        )

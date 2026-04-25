@@ -46,7 +46,9 @@ export default function UserManagement() {
       toast.success("User created");
     },
     onError: (err: any) => {
-      toast.error(err?.message || "Failed to create user");
+      toast.error(
+        err?.response?.data?.detail || err?.message || "Failed to create user",
+      );
     },
   });
 
@@ -57,7 +59,9 @@ export default function UserManagement() {
       toast.success("User updated");
     },
     onError: (err: any) => {
-      toast.error(err?.message || "Failed to update user");
+      toast.error(
+        err?.response?.data?.detail || err?.message || "Failed to update user",
+      );
     },
   });
 
@@ -68,7 +72,10 @@ export default function UserManagement() {
       toast.success("User deleted");
     },
     onError: (err: any) => {
-      toast.error(err?.message || "Failed to delete user");
+      const message =
+        err?.response?.data?.detail || err?.message || "Failed to delete user";
+
+      toast.error(message);
     },
   });
 
