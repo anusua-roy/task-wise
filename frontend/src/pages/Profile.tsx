@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAuth } from "../contexts/AuthContext";
-import { BUTTON_NAMES } from "../constants/App.constants";
+import { BUTTON_NAMES, PROFILE_PAGE } from "../constants/App.constants";
 import { ROUTE_NAMES } from "../routes/constants";
 import { useNavigate } from "react-router-dom";
 
@@ -21,25 +21,25 @@ export default function Profile() {
   return (
     <section>
       <div className="mb-4">
-        <div className="text-sm text-[color:var(--muted)]">Account</div>
-        <h2 className="text-lg font-semibold">Profile</h2>
+        <div className="text-sm text-[color:var(--muted)]">{PROFILE_PAGE.ACCOUNT}</div>
+        <h2 className="text-lg font-semibold">{PROFILE_PAGE.PROFILE}</h2>
       </div>
 
       <div className="p-4 border rounded-md bg-[color:var(--card-bg)] max-w-xl">
         <>
           <div className="mb-3">
-            <div className="text-sm text-[color:var(--muted)]">Name</div>
+            <div className="text-sm text-[color:var(--muted)]">{PROFILE_PAGE.NAME}</div>
             <div className="font-medium">{user?.name ?? "—"}</div>
           </div>
           <div className="mb-3">
-            <div className="text-sm text-[color:var(--muted)]">Email</div>
+            <div className="text-sm text-[color:var(--muted)]">{PROFILE_PAGE.EMAIL}</div>
             <div className="font-medium">{user?.email ?? "—"}</div>
           </div>
           <div className="mb-3">
             <div className="text-sm text-[color:var(--muted)]">
-              Logged in as
+              {PROFILE_PAGE.LOGGED_IN_AS}
             </div>
-            <div className="font-medium">{(user as any)?.role?.name ?? "—"}</div>
+            <div className="font-medium">{(user as any)?.role ?? "—"}</div>
           </div>
           <div className="mb-3 w-fit text-white bg-red-600 rounded-lg">
             <button className="py-1 px-2" onClick={handleSignOut}>

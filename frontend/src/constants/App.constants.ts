@@ -10,10 +10,12 @@ export const BUTTON_NAMES = {
   ADD_PROJECT: "Add Project",
   EDIT_PROJECT: "Edit Project",
   CREATE_PROJECT: "Create Project",
+  DELETE_PROJECT: "Delete Project",
   ADD_TASK: "Add task",
   EDIT_TASK: "Edit Task",
   CREATE_TASK: "Create Task",
   NEW_TASK: "New Task",
+  ADD: "Add",
   SAVE: "Save",
   CREATE: "Create",
   CANCEL: "Cancel",
@@ -22,7 +24,11 @@ export const BUTTON_NAMES = {
   SSO_LOGIN: "Sign in with SSO",
   SIGN_IN: "Sign In",
   NEW_USER: "New User",
-  EDIT:"Edit"
+  EDIT: "Edit",
+  REMOVE: "Remove",
+  REMOVE_MEMBER: "Remove Member",
+  ADD_MEMBER: "Add Member",
+  MANAGE: "Manage",
 };
 
 export const ERR_MSG = {
@@ -106,4 +112,19 @@ export const OTHERS = {
   SIGNING_IN: "Signing in...",
   SAVING: "Saving...",
   CREATING: "Creating...",
+  DELETE_PROJECT_WARNING:
+    "This will permanently delete the project and all tasks.",
+  REMOVE_MEMBER_WARNING:
+    "Are you sure you want to remove this member? Active tasks must be reassigned first.",
+  SELECT_USER: "Select user",
+  UNASSIGNED: "Unassigned",
+  MEMBERS: "Members:",
+};
+
+export const PROFILE_PAGE = {
+  ACCOUNT: "Account",
+  PROFILE: "Profile",
+  NAME: "Name",
+  EMAIL: "Email",
+  LOGGED_IN_AS: "Logged in as",
 };

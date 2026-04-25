@@ -8,6 +8,7 @@ import {
   EMPTY_STRING,
   ERR_MSG,
   FORM_LABEL,
+  OTHERS,
   SIDEBAR_OPTIONS,
   TASK_STATUS,
 } from "../constants/App.constants";
@@ -231,13 +232,13 @@ export default function ProjectDetail() {
           )}
 
           <div className="text-sm text-gray-500 mt-2">
-            Members: {members.length}
+            {`${OTHERS.MEMBERS} ${members.length}`}
             {canEdit && (
               <button
                 onClick={() => setShowMemberModal(true)}
                 className="ml-3 text-xs text-orange-600 hover:underline"
               >
-                Manage
+                {BUTTON_NAMES.MANAGE}
               </button>
             )}
           </div>
@@ -265,7 +266,7 @@ export default function ProjectDetail() {
             ))}
           </div>
 
-          <div className="mt-3 text-sm">Progress: {progress}%</div>
+          <div className="mt-3 text-sm">{`${OTHERS.PROGRESS} ${progress}%`}</div>
         </div>
 
         {/* ACTIONS */}
@@ -276,10 +277,10 @@ export default function ProjectDetail() {
                 onClick={saveEdit}
                 className="px-4 py-2 bg-green-600 text-white rounded"
               >
-                Save
+                {BUTTON_NAMES.SAVE}
               </button>
               <button onClick={cancelEdit} className="px-4 py-2 border rounded">
-                Cancel
+                {BUTTON_NAMES.CANCEL}
               </button>
             </>
           ) : (
@@ -296,7 +297,7 @@ export default function ProjectDetail() {
                   onClick={() => setShowDeleteProjectModal(true)}
                   className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700"
                 >
-                  Delete
+                  {BUTTON_NAMES.DELETE_PROJECT}
                 </button>
               </>
             )
@@ -307,7 +308,7 @@ export default function ProjectDetail() {
               onClick={() => setShowTaskForm(true)}
               className="px-4 py-2 text-sm rounded-lg bg-orange-600 text-white hover:bg-orange-700"
             >
-              Add Task
+              {BUTTON_NAMES.ADD_TASK}
             </button>
           )}
         </div>
@@ -327,7 +328,7 @@ export default function ProjectDetail() {
       {showTaskForm && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40">
           <div className="bg-white p-5 rounded w-full max-w-md">
-            <h2 className="text-lg font-semibold">Create Task</h2>
+            <h2 className="text-lg font-semibold">{BUTTON_NAMES.CREATE_TASK}</h2>
 
             <input
               value={taskDraft.title}
@@ -355,7 +356,7 @@ export default function ProjectDetail() {
               }
               className="border p-2 w-full mt-2"
             >
-              <option value="">Unassigned</option>
+              <option value="">{OTHERS.UNASSIGNED}</option>
               {members.map((m: any) => (
                 <option key={m.id} value={m.id}>
                   {m.name}
@@ -368,14 +369,14 @@ export default function ProjectDetail() {
                 onClick={() => setShowTaskForm(false)}
                 className="px-4 py-2 bg-gray-200 rounded"
               >
-                Cancel
+                {BUTTON_NAMES.CANCEL}
               </button>
 
               <button
                 onClick={handleCreateTask}
                 className="px-4 py-2 bg-orange-600 text-white rounded"
               >
-                Create
+                {BUTTON_NAMES.CREATE}
               </button>
             </div>
           </div>
@@ -385,14 +386,16 @@ export default function ProjectDetail() {
       {showMemberModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40">
           <div className="bg-white p-5 rounded w-full max-w-md">
-            <h2 className="text-lg font-semibold">Add Member</h2>
+            <h2 className="text-lg font-semibold">{BUTTON_NAMES.ADD_MEMBER}</h2>
 
             <select
               value={selectedUser}
               onChange={(e) => setSelectedUser(e.target.value)}
               className="border p-2 w-full mt-3"
             >
-              <option value="">Select user</option>
+              <option value="">
+                {OTHERS.SELECT_USER}
+              </option>
 
               {allUsers
                 .filter((u: any) => !members.some((m: any) => m.id === u.id))
@@ -408,7 +411,7 @@ export default function ProjectDetail() {
                 onClick={() => setShowMemberModal(false)}
                 className="px-4 py-2 bg-gray-200 rounded"
               >
-                Cancel
+                {BUTTON_NAMES.CANCEL}
               </button>
 
               <button
@@ -416,7 +419,7 @@ export default function ProjectDetail() {
                 disabled={!selectedUser}
                 className="px-4 py-2 bg-orange-600 text-white rounded disabled:opacity-50"
               >
-                Add
+                {BUTTON_NAMES.ADD}
               </button>
             </div>
           </div>
@@ -427,12 +430,11 @@ export default function ProjectDetail() {
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-5">
             <h3 className="text-lg font-semibold text-gray-900">
-              Remove Member
+              {BUTTON_NAMES.REMOVE_MEMBER}
             </h3>
 
             <p className="text-sm text-gray-600 mt-2">
-              Are you sure you want to remove this member? Active tasks must be
-              reassigned first.
+              {OTHERS.REMOVE_MEMBER_WARNING}
             </p>
 
             <div className="flex justify-end gap-3 mt-5">
@@ -456,7 +458,7 @@ export default function ProjectDetail() {
                 }}
                 className="px-4 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700"
               >
-                Remove
+                {BUTTON_NAMES.REMOVE}
               </button>
             </div>
           </div>
@@ -466,11 +468,11 @@ export default function ProjectDetail() {
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-5">
             <h3 className="text-lg font-semibold text-gray-900">
-              Delete Project
+              {BUTTON_NAMES.DELETE_PROJECT}
             </h3>
 
             <p className="text-sm text-gray-600 mt-2">
-              This will permanently delete the project and all tasks.
+              {OTHERS.DELETE_PROJECT_WARNING}
             </p>
 
             <div className="flex justify-end gap-3 mt-5">
