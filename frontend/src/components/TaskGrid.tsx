@@ -110,7 +110,9 @@ export default function TaskGrid({
       toast.success("Task updated");
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.message || "Failed to update task");
+      toast.error(
+        err?.response?.data?.detail||err?.message || "Failed to update task",
+      );
     }
   };
 
@@ -134,7 +136,9 @@ export default function TaskGrid({
       setShowDeleteConfirm(false);
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.message || "Failed to delete task");
+      toast.error(
+        err?.response?.data?.detail||err?.message || "Failed to delete task",
+      );
     }
   };
 
@@ -156,7 +160,9 @@ export default function TaskGrid({
       toast.success("Task completed");
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.message || "Failed to update task");
+      toast.error(
+        err?.response?.data?.detail||err?.message || "Failed to update task",
+      );
     }
   };
 
@@ -224,9 +230,11 @@ export default function TaskGrid({
                   value={draft.status}
                   onChange={(e) => handleChange("status", e.target.value)}
                 >
-                  {Object.values(TASK_STATUS).map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
+                  {Object.values(TASK_STATUS)
+                    .filter((s) => s !== TASK_STATUS.ALL)
+                    .map((s) => (
+                      <option key={s}>{s}</option>
+                    ))}
                 </select>
               ) : (
                 <StatusBadge status={task.status} />

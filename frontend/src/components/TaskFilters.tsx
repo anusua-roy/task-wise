@@ -2,8 +2,6 @@ import React from "react";
 import { TaskStatus } from "../types/task.type";
 import {
   BUTTON_NAMES,
-  EMPTY_STRING,
-  OTHERS,
   PLACEHOLDERS,
   TASK_STATUS,
 } from "../constants/App.constants";
@@ -54,12 +52,9 @@ export default function TaskFilters({
         aria-label="Filter by status"
         className="px-2 py-2 border border-black/10 rounded-md"
       >
-        <option value={TASK_STATUS.NEW}>{TASK_STATUS.NEW}</option>
-        <option value={TASK_STATUS.IN_PROGRESS}>
-          {TASK_STATUS.IN_PROGRESS}
-        </option>
-        <option value={TASK_STATUS.BLOCKED}>{TASK_STATUS.BLOCKED}</option>
-        <option value={TASK_STATUS.DONE}>{TASK_STATUS.DONE}</option>
+        {Object.values(TASK_STATUS).map((s) => (
+          <option key={s}>{s}</option>
+        ))}
       </select>
 
       {/* Clear Button */}

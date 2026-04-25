@@ -95,11 +95,11 @@ export const TASK_TABLE = {
 };
 
 export const TASK_STATUS = {
-  DONE: "Done",
+  ALL: "All",
+  NEW: "New",
   IN_PROGRESS: "In Progress",
   BLOCKED: "Blocked",
-  NEW: "New",
-  ALL: "All",
+  DONE: "Done",
 };
 
 export const OTHERS = {

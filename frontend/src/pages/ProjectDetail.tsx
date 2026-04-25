@@ -104,7 +104,9 @@ export default function ProjectDetail() {
     },
 
     onError: (err: any) => {
-      toast.error(err?.message || "Failed to update project");
+      toast.error(
+        err?.response?.data?.detail||err?.message || "Failed to update project",
+      );
     },
   });
 
@@ -129,7 +131,9 @@ export default function ProjectDetail() {
       });
     },
     onError: (err: any) => {
-      toast.error(err?.message || "Cannot remove member");
+      toast.error(
+        err?.response?.data?.detail||err?.message || "Cannot remove member",
+      );
     },
   });
 
