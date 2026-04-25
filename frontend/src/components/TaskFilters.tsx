@@ -54,7 +54,6 @@ export default function TaskFilters({
         aria-label="Filter by status"
         className="px-2 py-2 border border-black/10 rounded-md"
       >
-        <option value={TASK_STATUS.ALL}>{TASK_STATUS.ALL}</option>
         <option value={TASK_STATUS.NEW}>{TASK_STATUS.NEW}</option>
         <option value={TASK_STATUS.IN_PROGRESS}>
           {TASK_STATUS.IN_PROGRESS}

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  BUTTON_NAMES,
   EMPTY_STRING,
   TASK_STATUS,
   TASK_TABLE,
@@ -93,12 +94,9 @@ export default function TaskGrid({
        * - If assignees changed → use draft
        * - If NOT changed → preserve existing
        */
-      if (draft.assignees !== undefined) {
+      if (showAssignee && draft.assignees !== undefined) {
         payload.assignees = draft.assignees;
-      } else {
-        payload.assignees = existingTask?.assignees?.map((a) => a.id) || [];
       }
-
       await updateTask(editingId, payload);
 
       queryClient.invalidateQueries({
@@ -308,14 +306,25 @@ export default function TaskGrid({
 
       {/* DELETE MODAL */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40">
-          <div className="bg-white p-4 rounded">
-            <p>Delete this task?</p>
-            <div className="flex gap-2 mt-3">
-              <button onClick={() => setShowDeleteConfirm(false)}>
-                Cancel
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-5">
+            <h3 className="text-lg font-semibold text-gray-900">Delete Task</h3>
+            <p className="text-sm text-gray-600 mt-2">
+              This will permanently delete the task.
+            </p>
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50"
+              >
+                {BUTTON_NAMES.CANCEL}
               </button>
-              <button onClick={confirmDelete}>Delete</button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700"
+              >
+                {BUTTON_NAMES.DELETE}
+              </button>
             </div>
           </div>
         </div>
