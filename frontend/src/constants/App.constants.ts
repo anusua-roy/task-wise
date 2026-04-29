@@ -91,6 +91,7 @@ export const TASK_TABLE = {
   TITLE: "Title",
   DESCRIPTION: "Description",
   STATUS: "Status",
+  DUE_DATE: "Due Date",
   ACTION: "Action",
 };
 

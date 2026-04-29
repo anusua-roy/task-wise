@@ -31,9 +31,30 @@ def create_project(
 ):
     can_create_task(current_user)
 
+    # =========================
+    # DATE VALIDATION (NEW)
+    # =========================
+    if not payload.start_date or not payload.end_date:
+        raise HTTPException(400, "start_date and end_date are required")
+
+    if payload.end_date < payload.start_date:
+        raise HTTPException(
+            400,
+            "end_date must be greater than or equal to start_date",
+        )
+
+    # (Optional but good)
+    # if payload.start_date < datetime.utcnow():
+    #     raise HTTPException(400, "start_date cannot be in the past")
+
+    # =========================
+    # CREATE PROJECT
+    # =========================
     project = Project(
         name=payload.name,
         description=payload.description,
+        start_date=payload.start_date,
+        end_date=payload.end_date,
         created_by_id=current_user.id,
     )
 
@@ -57,13 +78,20 @@ def create_project(
         exists = (
             db.query(ProjectMember)
             .filter(
-                ProjectMember.project_id == project.id, ProjectMember.user_id == user_id
+                ProjectMember.project_id == project.id,
+                ProjectMember.user_id == user_id,
             )
             .first()
         )
 
         if not exists:
-            db.add(ProjectMember(project_id=project.id, user_id=user_id, role="Member"))
+            db.add(
+                ProjectMember(
+                    project_id=project.id,
+                    user_id=user_id,
+                    role="Member",
+                )
+            )
 
     db.commit()
     db.refresh(project)
@@ -120,6 +148,8 @@ def list_projects(
                 "id": p.id,
                 "name": p.name,
                 "description": p.description,
+                "start_date": p.start_date,
+                "end_date": p.end_date,
                 "created_by": (
                     {
                         "id": creator.id,
@@ -195,6 +225,7 @@ def get_project_detail(
                 "title": task.title,
                 "description": task.description,
                 "status": task.status,
+                "due_date": task.due_date,
                 "assignees": [
                     {
                         "id": a.user_id,
@@ -210,6 +241,8 @@ def get_project_detail(
         "id": project.id,
         "name": project.name,
         "description": project.description,
+        "start_date": project.start_date,
+        "end_date": project.end_date,
         "created_by": (
             {
                 "id": creator.id,
@@ -252,14 +285,37 @@ def update_project(
     # IMPORTANT: permission check
     can_modify_project(current_user, project, membership)
 
-    # =========================
-    # APPLY UPDATES
-    # =========================
     if payload.name is not None:
         project.name = payload.name
 
     if payload.description is not None:
         project.description = payload.description
+
+    # =========================
+    # DATE UPDATE
+    # =========================
+    new_start = (
+        payload.start_date if payload.start_date is not None else project.start_date
+    )
+    new_end = payload.end_date if payload.end_date is not None else project.end_date
+
+    if not new_start or not new_end:
+        raise HTTPException(400, "Project must have start_date and end_date")
+
+    if new_end < new_start:
+        raise HTTPException(400, "end_date must be >= start_date")
+
+    tasks = db.query(Task).filter(Task.project_id == project_id).all()
+
+    for t in tasks:
+        if t.due_date and (t.due_date < new_start or t.due_date > new_end):
+            raise HTTPException(
+                400,
+                "Cannot shrink project timeline. Tasks exist outside new range",
+            )
+
+    project.start_date = new_start
+    project.end_date = new_end
 
     db.commit()
     db.refresh(project)

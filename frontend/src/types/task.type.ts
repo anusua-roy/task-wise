@@ -4,6 +4,7 @@ export type TaskStatus = "New" | "In Progress" | "Blocked" | "Done";
 export interface Task {
   id: string;
   title: string;
+  due_date?: string | null; // ISO string
   project_id?: string;
   description?: string;
   status: TaskStatus;
@@ -16,6 +17,7 @@ export interface Task {
 export interface TaskPayload {
   title: string;
   project_id?: string;
+  due_date?: string | null; // ISO string
   description?: string;
   status: string;
   assignees?: string[] | null;

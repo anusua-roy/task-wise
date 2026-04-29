@@ -91,9 +91,9 @@ export default function ProjectCard({ project }: { project: IProject }) {
           <span className="text-xs text-muted">{members.length} members</span>
 
           {/* Created Date */}
-          {project.created_at && (
+          {project.end_date && (
             <span className="text-xs text-muted">
-              {new Date(project.created_at).toLocaleDateString()}
+              {new Date(project.end_date).toLocaleDateString()}
             </span>
           )}
         </div>
