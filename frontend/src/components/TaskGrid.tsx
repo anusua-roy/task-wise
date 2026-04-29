@@ -53,15 +53,18 @@ export default function TaskGrid({
     return task.assignees?.some((a) => a.id === user?.id);
   };
 
-  // =========================
-  // EDIT
-  // =========================
+  const formatDateForInput = (date?: string) => {
+    if (!date) return "";
+    return date.split("T")[0]; // simplest safe fix
+  };
+
   const startEdit = (task: Task) => {
     setEditingId(task.id);
 
     setDraft({
       title: task.title,
       description: task.description,
+      due_date: formatDateForInput(task.due_date ?? ""), // FIX
       status: task.status,
       assignees: task.assignees?.map((a) => a.id) || [],
     });
@@ -97,6 +100,9 @@ export default function TaskGrid({
       if (showAssignee && draft.assignees !== undefined) {
         payload.assignees = draft.assignees;
       }
+      if (draft.due_date !== undefined) {
+        payload.due_date = draft.due_date;
+      }
       await updateTask(editingId, payload);
 
       queryClient.invalidateQueries({
@@ -111,7 +117,7 @@ export default function TaskGrid({
     } catch (err: any) {
       console.error(err);
       toast.error(
-        err?.response?.data?.detail||err?.message || "Failed to update task",
+        err?.response?.data?.detail || err?.message || "Failed to update task",
       );
     }
   };
@@ -137,7 +143,7 @@ export default function TaskGrid({
     } catch (err: any) {
       console.error(err);
       toast.error(
-        err?.response?.data?.detail||err?.message || "Failed to delete task",
+        err?.response?.data?.detail || err?.message || "Failed to delete task",
       );
     }
   };
@@ -161,7 +167,7 @@ export default function TaskGrid({
     } catch (err: any) {
       console.error(err);
       toast.error(
-        err?.response?.data?.detail||err?.message || "Failed to update task",
+        err?.response?.data?.detail || err?.message || "Failed to update task",
       );
     }
   };
@@ -171,14 +177,15 @@ export default function TaskGrid({
       {/* HEADER */}
       <div
         className={`grid ${
-          showAssignee ? "grid-cols-7" : "grid-cols-6"
+          showAssignee ? "grid-cols-8" : "grid-cols-7"
         } px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-50 border-b`}
       >
         <div className="col-span-2">{TASK_TABLE.TITLE}</div>
         <div className="col-span-2">{TASK_TABLE.DESCRIPTION}</div>
+        <div>{TASK_TABLE.DUE_DATE}</div>
         <div>{TASK_TABLE.STATUS}</div>
         {showAssignee && <div>Assignee</div>}
-        <div className="text-right">{TASK_TABLE.ACTION}</div>
+        {canModify() && <div className="text-right">{TASK_TABLE.ACTION}</div>}
       </div>
 
       {/* ROWS */}
@@ -192,7 +199,7 @@ export default function TaskGrid({
           <div
             key={task.id}
             className={`grid ${
-              showAssignee ? "grid-cols-7" : "grid-cols-6"
+              showAssignee ? "grid-cols-8" : "grid-cols-7"
             } items-center gap-x-4 px-4 py-3 border-b ${
               isEditing ? "bg-orange-50/40" : "hover:bg-gray-50"
             }`}
@@ -220,6 +227,24 @@ export default function TaskGrid({
                 />
               ) : (
                 <span>{task.description}</span>
+              )}
+            </div>
+
+            {/* DUE DATE */}
+            <div>
+              {isEditing ? (
+                <input
+                  type="date"
+                  value={draft.due_date || ""}
+                  onChange={(e) => handleChange("due_date", e.target.value)}
+                  className="px-2 py-1 border rounded"
+                />
+              ) : (
+                <span>
+                  {task.due_date
+                    ? new Date(task.due_date).toLocaleDateString()
+                    : "-"}
+                </span>
               )}
             </div>
 

@@ -8,6 +8,8 @@ export function getProjects() {
 export function createProject(data: {
   name: string;
   description?: string;
+  start_date: string;
+  end_date: string;
   member_ids: string[];
 }) {
   return http<IProject>("/api/projects/", {
@@ -22,7 +24,12 @@ export const getProjectById = async (id: string) => {
 
 export function updateProject(
   id: string,
-  data: { name: string; description?: string },
+  data: {
+    name: string;
+    description?: string;
+    start_date?: string;
+    end_date?: string;
+  },
 ) {
   return http(`/api/projects/${id}`, {
     method: "PUT",

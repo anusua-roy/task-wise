@@ -53,32 +53,28 @@ def run():
     db.commit()
 
     # ---------------------
-    # USERS
+    # USERS (LIMITED SET)
     # ---------------------
     users = [
-        User(name="Anusua Roy", email="anusua@taskwise.com", role_id=roles["admin"].id),
+        User(name="Admin User", email="admin@taskwise.com", role_id=roles["admin"].id),
         User(
-            name="Arjun Mehta", email="arjun@taskwise.com", role_id=roles["creator"].id
+            name="Creator One",
+            email="creator1@taskwise.com",
+            role_id=roles["creator"].id,
         ),
         User(
-            name="Priya Sharma", email="priya@taskwise.com", role_id=roles["creator"].id
+            name="Creator Two",
+            email="creator2@taskwise.com",
+            role_id=roles["creator"].id,
         ),
-        User(name="Rahul Das", email="rahul@taskwise.com", role_id=roles["creator"].id),
         User(
-            name="Sneha Kapoor",
-            email="sneha@taskwise.com",
+            name="Viewer One",
+            email="viewer1@taskwise.com",
             role_id=roles["readonly"].id,
         ),
         User(
-            name="Amit Verma", email="amit@taskwise.com", role_id=roles["readonly"].id
-        ),
-        User(
-            name="Neha Singh", email="neha@taskwise.com", role_id=roles["readonly"].id
-        ),
-        User(name="Dev Patel", email="dev@taskwise.com", role_id=roles["creator"].id),
-        User(
-            name="Karan Malhotra",
-            email="karan@taskwise.com",
+            name="Viewer Two",
+            email="viewer2@taskwise.com",
             role_id=roles["readonly"].id,
         ),
     ]
@@ -86,26 +82,29 @@ def run():
     db.add_all(users)
     db.commit()
 
-    creators = [u for u in users if u.role_id == roles["creator"].id]
+    admin = users[0]
+    creators = users[1:3]
+    viewers = users[3:]
 
     # ---------------------
-    # PROJECTS
+    # PROJECTS (WITH DATES)
     # ---------------------
+    today = datetime.utcnow()
+
     projects = [
         Project(
             name="Website Redesign",
-            description="Revamp UI + performance optimization",
+            description="UI overhaul",
             created_by_id=creators[0].id,
+            start_date=today - timedelta(days=10),
+            end_date=today + timedelta(days=20),
         ),
         Project(
-            name="Mobile App Launch",
-            description="iOS + Android rollout",
+            name="Mobile App",
+            description="Launch Android/iOS",
             created_by_id=creators[1].id,
-        ),
-        Project(
-            name="Internal Dashboard",
-            description="Analytics + BI dashboards",
-            created_by_id=creators[2].id,
+            start_date=today - timedelta(days=5),
+            end_date=today + timedelta(days=30),
         ),
     ]
 
@@ -120,23 +119,23 @@ def run():
     for p in projects:
         members = []
 
-        # owner
+        # Owner
         db.add(ProjectMember(project_id=p.id, user_id=p.created_by_id, role="Owner"))
         members.append(p.created_by_id)
 
-        # random additional members
-        extra_members = random.sample(users, k=3)
+        # Add 2 more members
+        extra_members = random.sample(users, k=2)
         for u in extra_members:
             if u.id != p.created_by_id:
                 db.add(ProjectMember(project_id=p.id, user_id=u.id, role="Member"))
                 members.append(u.id)
 
-        project_members_map[p.id] = list(set(members))  # unique
+        project_members_map[p.id] = list(set(members))
 
     db.commit()
 
     # ---------------------
-    # TASKS (FIXED ASSIGNEES)
+    # TASKS (VALID DUE DATES)
     # ---------------------
     statuses = [
         TaskStatus.NEW.value,
@@ -145,66 +144,56 @@ def run():
         TaskStatus.DONE.value,
     ]
 
-    task_titles = [
+    titles = [
         "Setup CI/CD",
-        "Fix login bug",
-        "Improve performance",
-        "Refactor API",
-        "Write unit tests",
-        "Optimize bundle size",
-        "Add analytics tracking",
-        "Implement RBAC",
-        "Fix mobile UI issues",
-        "Database migration",
+        "Fix Bug",
+        "Optimize UI",
+        "Write Tests",
+        "Refactor Code",
     ]
 
     for p in projects:
-        project_member_ids = project_members_map[p.id]
+        member_ids = project_members_map[p.id]
 
-        for i in range(8):
-            status = random.choice(statuses)
+        for i in range(6):
+            # Generate due date INSIDE project range
+            if random.choice([True, False]):
+                delta_days = random.randint(0, (p.end_date - p.start_date).days)
+                due_date = p.start_date + timedelta(days=delta_days)
+            else:
+                due_date = None  # keep some unassigned dates
 
             task = Task(
-                title=random.choice(task_titles),
+                title=random.choice(titles),
                 description=f"Task {i} for {p.name}",
-                status=status,
+                status=random.choice(statuses),
                 project_id=p.id,
                 created_by_id=p.created_by_id,
-                due_date=random.choice(
-                    [
-                        random_date(-5),
-                        random_date(0),
-                        random_date(5),
-                        None,
-                    ]
-                ),
+                due_date=due_date,
             )
 
             db.add(task)
             db.flush()
 
             # ---------------------
-            # ASSIGN ONLY PROJECT MEMBERS
+            # ASSIGNMENT (INTENTIONAL MIX)
             # ---------------------
             assign_type = random.choice(["none", "single", "multiple"])
 
             if assign_type == "single":
-                user_id = random.choice(project_member_ids)
-                db.add(TaskAssignee(task_id=task.id, user_id=user_id))
+                db.add(TaskAssignee(task_id=task.id, user_id=random.choice(member_ids)))
 
             elif assign_type == "multiple":
-                selected = random.sample(
-                    project_member_ids, k=min(2, len(project_member_ids))
-                )
+                selected = random.sample(member_ids, k=min(2, len(member_ids)))
                 for uid in selected:
                     db.add(TaskAssignee(task_id=task.id, user_id=uid))
 
-            # none = unassigned (valid case)
+            # "none" → keep unassigned
 
     db.commit()
     db.close()
 
-    print("Database seeded correctly (members-only assignment).")
+    print("Database seeded with clean realistic data.")
 
 
 # =========================

@@ -47,11 +47,14 @@ export default function ProjectDetail() {
   const [draft, setDraft] = useState({
     name: EMPTY_STRING,
     description: EMPTY_STRING,
+    start_date: EMPTY_STRING,
+    end_date: EMPTY_STRING,
   });
 
   const [taskDraft, setTaskDraft] = useState({
     title: EMPTY_STRING,
     description: EMPTY_STRING,
+    due_date: EMPTY_STRING,
     assignees: EMPTY_STRING,
   });
 
@@ -78,13 +81,17 @@ export default function ProjectDetail() {
   const tasks = project?.tasks ?? [];
   const members = project?.members ?? [];
 
-  // =========================
-  // EDIT HANDLERS
-  // =========================
+  const formatDate = (date?: string) => {
+    if (!date) return "";
+    return date.split("T")[0];
+  };
+
   const startEdit = () => {
     setDraft({
       name: project?.name || EMPTY_STRING,
       description: project?.description || EMPTY_STRING,
+      start_date: formatDate(project?.start_date),
+      end_date: formatDate(project?.end_date),
     });
     setIsEditing(true);
   };
@@ -92,8 +99,12 @@ export default function ProjectDetail() {
   const cancelEdit = () => setIsEditing(false);
 
   const updateMutation = useMutation({
-    mutationFn: (data: { name: string; description?: string }) =>
-      updateProject(id!, data),
+    mutationFn: (data: {
+      name: string;
+      description?: string;
+      start_date?: string;
+      end_date?: string;
+    }) => updateProject(id!, data),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -105,7 +116,9 @@ export default function ProjectDetail() {
 
     onError: (err: any) => {
       toast.error(
-        err?.response?.data?.detail||err?.message || "Failed to update project",
+        err?.response?.data?.detail ||
+          err?.message ||
+          "Failed to update project",
       );
     },
   });
@@ -132,7 +145,7 @@ export default function ProjectDetail() {
     },
     onError: (err: any) => {
       toast.error(
-        err?.response?.data?.detail||err?.message || "Cannot remove member",
+        err?.response?.data?.detail || err?.message || "Cannot remove member",
       );
     },
   });
@@ -141,6 +154,8 @@ export default function ProjectDetail() {
     updateMutation.mutate({
       name: draft.name,
       description: draft.description,
+      start_date: draft.start_date,
+      end_date: draft.end_date,
     });
   };
 
@@ -169,6 +184,7 @@ export default function ProjectDetail() {
       setTaskDraft({
         title: EMPTY_STRING,
         description: EMPTY_STRING,
+        due_date: EMPTY_STRING,
         assignees: EMPTY_STRING,
       });
     },
@@ -180,6 +196,7 @@ export default function ProjectDetail() {
       description: taskDraft.description,
       project_id: id,
       status: TASK_STATUS.NEW as TaskStatus,
+      due_date: taskDraft.due_date || null,
       assignees: taskDraft.assignees ? [taskDraft.assignees] : [],
     });
   };
@@ -233,6 +250,31 @@ export default function ProjectDetail() {
             />
           ) : (
             <p className="text-gray-600 mt-2">{project.description}</p>
+          )}
+
+          {isEditing ? (
+            <div className="mt-2 flex gap-2">
+              <input
+                type="date"
+                value={draft.start_date}
+                onChange={(e) =>
+                  setDraft((p) => ({ ...p, start_date: e.target.value }))
+                }
+                className="border px-2 py-1"
+              />
+
+              <input
+                type="date"
+                value={draft.end_date}
+                min={draft.start_date} // UX constraint
+                onChange={(e) =>
+                  setDraft((p) => ({ ...p, end_date: e.target.value }))
+                }
+                className="border px-2 py-1"
+              />
+            </div>
+          ) : (
+            <p className="text-gray-600 mt-2">{`From ${formatDate(project.start_date)} to ${formatDate(project.end_date)}`}</p>
           )}
 
           <div className="text-sm text-gray-500 mt-2">
@@ -332,7 +374,9 @@ export default function ProjectDetail() {
       {showTaskForm && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40">
           <div className="bg-white p-5 rounded w-full max-w-md">
-            <h2 className="text-lg font-semibold">{BUTTON_NAMES.CREATE_TASK}</h2>
+            <h2 className="text-lg font-semibold">
+              {BUTTON_NAMES.CREATE_TASK}
+            </h2>
 
             <input
               value={taskDraft.title}
@@ -346,6 +390,17 @@ export default function ProjectDetail() {
               value={taskDraft.description}
               onChange={(e) =>
                 setTaskDraft((p) => ({ ...p, description: e.target.value }))
+              }
+              className="border p-2 w-full mt-2"
+            />
+
+            <input
+              type="date"
+              value={taskDraft.due_date}
+              min={project.start_date?.split("T")[0]}
+              max={project.end_date?.split("T")[0]}
+              onChange={(e) =>
+                setTaskDraft((p) => ({ ...p, due_date: e.target.value }))
               }
               className="border p-2 w-full mt-2"
             />
@@ -397,9 +452,7 @@ export default function ProjectDetail() {
               onChange={(e) => setSelectedUser(e.target.value)}
               className="border p-2 w-full mt-3"
             >
-              <option value="">
-                {OTHERS.SELECT_USER}
-              </option>
+              <option value="">{OTHERS.SELECT_USER}</option>
 
               {allUsers
                 .filter((u: any) => !members.some((m: any) => m.id === u.id))

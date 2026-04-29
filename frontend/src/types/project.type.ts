@@ -8,6 +8,8 @@ export interface IProject {
   tags?: string[];
   owner?: string;
   tasks?: Task[];
+  start_date?: string;
+  end_date?: string;
   created_at?: string;
   updated_at?: string;
   created_by?: User;

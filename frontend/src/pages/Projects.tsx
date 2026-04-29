@@ -21,6 +21,8 @@ import { canCreateTask } from "../utils/common";
 type FormValues = {
   title: string;
   description?: string;
+  start_date: string;
+  end_date: string;
 };
 
 export default function Projects() {
@@ -104,10 +106,12 @@ export default function Projects() {
     reset({
       title: EMPTY_STRING,
       description: EMPTY_STRING,
+      start_date: EMPTY_STRING,
+      end_date: EMPTY_STRING,
     });
 
     setSelectedMembers([]);
-    setUserSearch(""); // important
+    setUserSearch("");
     setShowForm(true);
   };
 
@@ -116,6 +120,8 @@ export default function Projects() {
       name: data.title,
       description: data.description || EMPTY_STRING,
       member_ids: selectedMembers,
+      start_date: data.start_date,
+      end_date: data.end_date,
     });
   };
 
@@ -168,19 +174,35 @@ export default function Projects() {
             <h2 className="text-xl font-semibold">
               {BUTTON_NAMES.CREATE_PROJECT}
             </h2>
-
             <input
               {...register("title", { required: true })}
               placeholder="Project Title"
               className="border p-2"
             />
-
             <textarea
               {...register("description")}
               placeholder="Description"
               className="border p-2"
             />
-
+            From:
+            <input
+              type="date"
+              {...register("start_date", {
+                required: "Start date is required",
+              })}
+              className="border p-2"
+            />
+            To:
+            <input
+              type="date"
+              {...register("end_date", {
+                required: "End date is required",
+                validate: (value, formValues) =>
+                  value >= formValues.start_date ||
+                  "End date must be after start date",
+              })}
+              className="border p-2"
+            />
             {/* ================= MEMBERS ================= */}
             <div>
               <p className="text-sm font-medium mb-1">Add Members</p>
@@ -245,7 +267,6 @@ export default function Projects() {
                   })}
               </div>
             </div>
-
             {/* ================= ACTIONS ================= */}
             <div className="flex justify-end gap-2">
               <button

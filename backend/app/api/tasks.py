@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from datetime import datetime
 
+from app.models.project import Project
 from app.models.task import Task, TaskAssignee
 from app.models.project_member import ProjectMember
 from app.models.user import User
@@ -14,6 +16,19 @@ from app.services.auth_service import (
 )
 
 router = APIRouter(prefix="/api/tasks", tags=["Tasks"])
+
+
+# ==========================================================
+# HELPER: PARSE DATE SAFELY
+# ==========================================================
+def parse_due_date(raw_due_date: str | None):
+    if not raw_due_date:
+        return None
+    try:
+        parsed = datetime.fromisoformat(raw_due_date)
+        return parsed  # change to parsed.date() if DB uses Date
+    except Exception:
+        raise HTTPException(400, "Invalid due_date format")
 
 
 # ==========================================================
@@ -54,7 +69,7 @@ def create_task(
 
     assignee_ids = payload.get("assignees", [])
 
-    # Validate assignees → MUST be project members
+    # Validate assignees
     if assignee_ids:
         members = (
             db.query(ProjectMember)
@@ -69,31 +84,39 @@ def create_task(
 
         for user_id in assignee_ids:
             if user_id not in member_ids:
-                raise HTTPException(
-                    400,
-                    "Assignee must be a project member",
-                )
+                raise HTTPException(400, "Assignee must be a project member")
 
+    # Fetch project
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(404, "Project not found")
+
+    # Parse + validate due_date
+    due_date = parse_due_date(payload.get("due_date"))
+
+    if due_date and project.start_date and project.end_date:
+        if due_date < project.start_date or due_date > project.end_date:
+            raise HTTPException(400, "Due date must be within project timeline")
+
+    # Create task
     task = Task(
         title=payload["title"],
         description=payload.get("description"),
-        due_date=payload.get("due_date"),
+        due_date=due_date,
         status=status,
         project_id=project_id,
         created_by_id=current_user.id,
     )
 
     db.add(task)
-    db.commit()
-    db.refresh(task)
+    db.flush()  # better than early commit
 
     # Add assignees
     for user_id in assignee_ids:
         db.add(TaskAssignee(task_id=task.id, user_id=user_id))
 
     db.commit()
-
-    return task
+    db.refresh(task)
 
 
 # ==========================================================
@@ -111,12 +134,8 @@ def update_task(
     if not task:
         raise HTTPException(404, "Task not found")
 
-    # =========================
     # READ-ONLY USER
-    # =========================
     if current_user.role.name == "Read-Only":
-
-        # Must be assigned
         assignment = (
             db.query(TaskAssignee)
             .filter(
@@ -127,27 +146,17 @@ def update_task(
         )
 
         if not assignment:
-            raise HTTPException(
-                403,
-                "You can only update your assigned tasks",
-            )
+            raise HTTPException(403, "You can only update your assigned tasks")
 
-        # Only allow DONE
         if payload.get("status") != TaskStatus.DONE.value:
-            raise HTTPException(
-                403,
-                "Read-only user can only mark task as DONE",
-            )
+            raise HTTPException(403, "Read-only user can only mark task as DONE")
 
         task.status = TaskStatus.DONE.value
         db.commit()
         db.refresh(task)
-
         return task
 
-    # =========================
     # ADMIN / CREATOR
-    # =========================
     can_modify_task(current_user, task)
 
     if "title" in payload:
@@ -159,8 +168,37 @@ def update_task(
     if "status" in payload:
         if payload["status"] not in [s.value for s in TaskStatus]:
             raise HTTPException(400, "Invalid status")
-
         task.status = payload["status"]
+
+    # =========================
+    # DUE DATE UPDATE (FIXED)
+    # =========================
+    if "due_date" in payload:
+        project = db.query(Project).filter(Project.id == task.project_id).first()
+
+        if not project:
+            raise HTTPException(404, "Project not found")
+
+        raw_due_date = payload.get("due_date")
+
+        # Parse
+        if raw_due_date:
+            try:
+                due_date = datetime.fromisoformat(raw_due_date)
+            except Exception:
+                raise HTTPException(400, "Invalid due_date format")
+        else:
+            due_date = None
+
+        # Validate ONLY if all values exist
+        if due_date and project.start_date and project.end_date:
+            if due_date < project.start_date or due_date > project.end_date:
+                raise HTTPException(
+                    400,
+                    "Due date must be within project timeline",
+                )
+
+        task.due_date = due_date
 
     # =========================
     # UPDATE ASSIGNEES
@@ -181,10 +219,7 @@ def update_task(
 
         for user_id in assignee_ids:
             if user_id not in member_ids:
-                raise HTTPException(
-                    400,
-                    "Assignee must be project member",
-                )
+                raise HTTPException(400, "Assignee must be project member")
 
         db.query(TaskAssignee).filter(TaskAssignee.task_id == task_id).delete()
 
@@ -219,6 +254,7 @@ def get_my_tasks(
             "description": t.description,
             "status": t.status,
             "project_id": t.project_id,
+            "due_date": t.due_date,
         }
         for t in tasks
     ]
