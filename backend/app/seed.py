@@ -82,9 +82,7 @@ def run():
     db.add_all(users)
     db.commit()
 
-    admin = users[0]
     creators = users[1:3]
-    viewers = users[3:]
 
     # ---------------------
     # PROJECTS (WITH DATES)
