@@ -52,7 +52,7 @@ def google_login(payload: dict, db: Session = Depends(get_db)):
     # EXTRACT USER INFO
     # =========================
     email = idinfo.get("email")
-    name = idinfo.get("name")
+    # name = idinfo.get("name")
 
     if not email:
         raise HTTPException(status_code=400, detail="Email not provided by Google")
