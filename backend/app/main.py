@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from app.api import users, roles, projects, tasks, auth
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI(
     title="FSE Task Tracker",

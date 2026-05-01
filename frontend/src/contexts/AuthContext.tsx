@@ -7,6 +7,7 @@ type AuthContextValue = {
   user: User | null;
   token: string | null;
   signIn: (email: string) => Promise<void>;
+  googleSignIn: (token: string) => Promise<void>;
   signOut: () => void;
   initialized: boolean;
 };
@@ -34,6 +35,27 @@ const [token, setToken] = useState<string | null>(session?.token || null);
     setSession(res.user, res.access_token);
   }
 
+  async function googleSignIn(googleToken: string) {
+    const res = await fetch("/api/auth/google", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token: googleToken }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.detail || "Google login failed");
+    }
+
+    setUser(data.user);
+    setToken(data.access_token);
+
+    setSession(data.user, data.access_token);
+  }
+
  function signOut() {
    setUser(null);
    setToken(null);
@@ -41,7 +63,7 @@ const [token, setToken] = useState<string | null>(session?.token || null);
  }
 
   return (
-    <AuthContext.Provider value={{ user, token, signIn, signOut, initialized }}>
+    <AuthContext.Provider value={{ user, token, signIn, googleSignIn, signOut, initialized }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt
+from datetime import datetime, timedelta
 
 from app.models.user import User
 from app.api.deps import get_db
@@ -8,10 +9,24 @@ from sqlalchemy.orm import Session
 
 SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 security = HTTPBearer()
 
 
+# =========================
+# CREATE TOKEN (NEW ADDITION)
+# =========================
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+# =========================
+# GET CURRENT USER
+# =========================
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
@@ -32,6 +47,9 @@ def get_current_user(
     return user
 
 
+# =========================
+# ROLE CHECKER
+# =========================
 def require_role(role_name: str):
     def role_checker(current_user: User = Depends(get_current_user)):
 
