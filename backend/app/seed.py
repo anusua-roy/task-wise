@@ -28,13 +28,6 @@ def reset_database():
 
 
 # =========================
-# HELPERS
-# =========================
-def random_date(days_offset):
-    return datetime.utcnow() + timedelta(days=days_offset)
-
-
-# =========================
 # SEED DATA
 # =========================
 def run():
@@ -53,36 +46,17 @@ def run():
     db.commit()
 
     # ---------------------
-    # USERS (LIMITED SET)
+    # USERS (ONLY REAL USER)
     # ---------------------
-    users = [
-        User(name="Admin User", email="admin@taskwise.com", role_id=roles["admin"].id),
-        User(
-            name="Creator One",
-            email="creator1@taskwise.com",
-            role_id=roles["creator"].id,
-        ),
-        User(
-            name="Creator Two",
-            email="creator2@taskwise.com",
-            role_id=roles["creator"].id,
-        ),
-        User(
-            name="Viewer One",
-            email="viewer1@taskwise.com",
-            role_id=roles["readonly"].id,
-        ),
-        User(
-            name="Viewer Two",
-            email="viewer2@taskwise.com",
-            role_id=roles["readonly"].id,
-        ),
-    ]
+    admin_user = User(
+        name="Anusua Roy",
+        email="anusua.roy05@gmail.com",  # ⚠️ MUST match Google account
+        role_id=roles["admin"].id,
+    )
 
-    db.add_all(users)
+    db.add(admin_user)
     db.commit()
-
-    creators = users[1:3]
+    db.refresh(admin_user)
 
     # ---------------------
     # PROJECTS (WITH DATES)
@@ -92,15 +66,15 @@ def run():
     projects = [
         Project(
             name="Website Redesign",
-            description="UI overhaul",
-            created_by_id=creators[0].id,
+            description="UI overhaul and performance optimization",
+            created_by_id=admin_user.id,
             start_date=today - timedelta(days=10),
             end_date=today + timedelta(days=20),
         ),
         Project(
-            name="Mobile App",
-            description="Launch Android/iOS",
-            created_by_id=creators[1].id,
+            name="Mobile App Launch",
+            description="Launch Android and iOS apps",
+            created_by_id=admin_user.id,
             start_date=today - timedelta(days=5),
             end_date=today + timedelta(days=30),
         ),
@@ -115,25 +89,20 @@ def run():
     project_members_map = {}
 
     for p in projects:
-        members = []
+        db.add(
+            ProjectMember(
+                project_id=p.id,
+                user_id=admin_user.id,
+                role="Owner",
+            )
+        )
 
-        # Owner
-        db.add(ProjectMember(project_id=p.id, user_id=p.created_by_id, role="Owner"))
-        members.append(p.created_by_id)
-
-        # Add 2 more members
-        extra_members = random.sample(users, k=2)
-        for u in extra_members:
-            if u.id != p.created_by_id:
-                db.add(ProjectMember(project_id=p.id, user_id=u.id, role="Member"))
-                members.append(u.id)
-
-        project_members_map[p.id] = list(set(members))
+        project_members_map[p.id] = [admin_user.id]
 
     db.commit()
 
     # ---------------------
-    # TASKS (VALID DUE DATES)
+    # TASKS
     # ---------------------
     statuses = [
         TaskStatus.NEW.value,
@@ -144,29 +113,29 @@ def run():
 
     titles = [
         "Setup CI/CD",
-        "Fix Bug",
-        "Optimize UI",
-        "Write Tests",
-        "Refactor Code",
+        "Fix login bug",
+        "Optimize UI performance",
+        "Write unit tests",
+        "Refactor API layer",
+        "Improve accessibility",
     ]
 
     for p in projects:
-        member_ids = project_members_map[p.id]
-
         for i in range(6):
-            # Generate due date INSIDE project range
+
+            # Due date inside project range OR None
             if random.choice([True, False]):
                 delta_days = random.randint(0, (p.end_date - p.start_date).days)
                 due_date = p.start_date + timedelta(days=delta_days)
             else:
-                due_date = None  # keep some unassigned dates
+                due_date = None
 
             task = Task(
                 title=random.choice(titles),
-                description=f"Task {i} for {p.name}",
+                description=f"Task {i + 1} for {p.name}",
                 status=random.choice(statuses),
                 project_id=p.id,
-                created_by_id=p.created_by_id,
+                created_by_id=admin_user.id,
                 due_date=due_date,
             )
 
@@ -174,24 +143,21 @@ def run():
             db.flush()
 
             # ---------------------
-            # ASSIGNMENT (INTENTIONAL MIX)
+            # ASSIGNMENT (MIX)
             # ---------------------
-            assign_type = random.choice(["none", "single", "multiple"])
-
-            if assign_type == "single":
-                db.add(TaskAssignee(task_id=task.id, user_id=random.choice(member_ids)))
-
-            elif assign_type == "multiple":
-                selected = random.sample(member_ids, k=min(2, len(member_ids)))
-                for uid in selected:
-                    db.add(TaskAssignee(task_id=task.id, user_id=uid))
-
-            # "none" → keep unassigned
+            if random.choice([True, False]):
+                db.add(
+                    TaskAssignee(
+                        task_id=task.id,
+                        user_id=admin_user.id,
+                    )
+                )
+            # else → leave unassigned
 
     db.commit()
     db.close()
 
-    print("Database seeded with clean realistic data.")
+    print("✅ Database seeded with SSO-compatible clean data.")
 
 
 # =========================

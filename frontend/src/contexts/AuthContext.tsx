@@ -2,11 +2,13 @@ import React, { createContext, useContext, useState } from "react";
 import { setSession, getSession, clearSession } from "../utils/session";
 import { login } from "../api/auth.service";
 import { User } from "../types/user.type";
+import { API_BASE_URL } from "../constants/Api.constants";
 
 type AuthContextValue = {
   user: User | null;
   token: string | null;
   signIn: (email: string) => Promise<void>;
+  googleSignIn: (token: string) => Promise<void>;
   signOut: () => void;
   initialized: boolean;
 };
@@ -14,10 +16,10 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-const session = getSession();
+  const session = getSession();
 
-const [user, setUser] = useState<User | null>(session?.user || null);
-const [token, setToken] = useState<string | null>(session?.token || null);
+  const [user, setUser] = useState<User | null>(session?.user || null);
+  const [token, setToken] = useState<string | null>(session?.token || null);
   const [initialized, setInitialized] = useState(false);
 
   // optional: run once to mark initialized
@@ -34,14 +36,37 @@ const [token, setToken] = useState<string | null>(session?.token || null);
     setSession(res.user, res.access_token);
   }
 
- function signOut() {
-   setUser(null);
-   setToken(null);
-   clearSession();
- }
+  async function googleSignIn(googleToken: string) {
+    const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token: googleToken }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.detail || "Google login failed");
+    }
+
+    setUser(data.user);
+    setToken(data.access_token);
+
+    setSession(data.user, data.access_token);
+  }
+
+  function signOut() {
+    setUser(null);
+    setToken(null);
+    clearSession();
+  }
 
   return (
-    <AuthContext.Provider value={{ user, token, signIn, signOut, initialized }}>
+    <AuthContext.Provider
+      value={{ user, token, signIn, googleSignIn, signOut, initialized }}
+    >
       {children}
     </AuthContext.Provider>
   );
