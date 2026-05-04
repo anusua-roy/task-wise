@@ -16,7 +16,11 @@ export default function Breadcrumbs({ items }: { items: Crumb[] }) {
                   {it.label}
                 </Link>
               ) : (
-                <span className={isLast ? "text-orange-600 font-semibold" : "text-muted"}>
+                <span
+                  className={
+                    isLast ? "text-orange-600 font-semibold" : "text-muted"
+                  }
+                >
                   {it.label}
                 </span>
               )}
